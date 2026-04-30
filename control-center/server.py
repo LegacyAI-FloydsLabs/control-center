@@ -1679,6 +1679,205 @@ async def cron_helper():
 
 
 # ---------------------------------------------------------------------------
+# ControlBoard endpoints — Page 1: Governance Dashboard
+# ---------------------------------------------------------------------------
+#
+# Authority: plans/controlboard.md Step 4 + plans/ROADMAP.md §4 (ControlBoard)
+# Schema:    plans/ROADMAP.md §3.E (repository_report.json fields)
+# Quarantine protocol: .supercache/contracts/repo-sanitation.md §3
+#
+# These endpoints power the Governance Dashboard tab. They walk the user's
+# drives looking for FLOYD.md-bearing projects, read each project's
+# SSOT/repository_report.json if present, and aggregate quarantine state for
+# the persistent ControlBoard alert.
+
+import time
+from pathlib import Path as _PathLib
+
+_DRIVES = (_PathLib("/Volumes/SanDisk1Tb"), _PathLib("/Volumes/Storage"))
+_PROJECT_WALK_EXCLUDE = frozenset({
+    ".Spotlight-V100", ".fseventsd", ".Trashes", ".DocumentRevisions-V100",
+    ".TemporaryItems", "node_modules", ".venv", "venv", ".git", ".supercache",
+    ".pnpm-store", "__pycache__", ".pytest_cache", ".cache", "Library",
+})
+_T7_OFF_LIMITS = _PathLib("/Volumes/T7")  # per ~/.claude/CLAUDE.md — Time Machine target
+
+# Read canonical .supercache version once at startup (per controlboard plan Step 4)
+try:
+    _CANONICAL_VERSION = _PathLib("/Volumes/SanDisk1Tb/.supercache/VERSION").read_text().strip()
+except OSError:
+    _CANONICAL_VERSION = "unknown"
+
+# 30-second TTL cache for the project walk
+_PROJECTS_CACHE: dict[str, object] = {"ts": 0.0, "data": None}
+_QUARANTINE_CACHE: dict[str, object] = {"ts": 0.0, "data": None}
+_CACHE_TTL_SECONDS = 30.0
+
+
+def _walk_for_projects(drive: _PathLib) -> list[_PathLib]:
+    """Find FLOYD.md-bearing projects at depth 1-2 on a drive."""
+    if not drive.exists():
+        return []
+    if drive == _T7_OFF_LIMITS or str(drive).startswith(str(_T7_OFF_LIMITS)):
+        return []
+    found: list[_PathLib] = []
+    try:
+        for top in drive.iterdir():
+            if top.name in _PROJECT_WALK_EXCLUDE or top.name.startswith("."):
+                continue
+            if not top.is_dir():
+                continue
+            # Depth-1 candidate
+            if (top / "FLOYD.md").is_file():
+                found.append(top)
+                continue
+            # Depth-2: peek inside one level
+            try:
+                for sub in top.iterdir():
+                    if sub.name in _PROJECT_WALK_EXCLUDE or sub.name.startswith("."):
+                        continue
+                    if sub.is_dir() and (sub / "FLOYD.md").is_file():
+                        found.append(sub)
+            except (OSError, PermissionError):
+                continue
+    except (OSError, PermissionError):
+        pass
+    return found
+
+
+def _project_status(proj: _PathLib, report: dict | None) -> str:
+    """Determine GOVERNED / CANDIDATE / DRIFTED / UNASSESSED status."""
+    if not (proj / "FLOYD.md").is_file():
+        return "UNASSESSED"
+    stamp_path = proj / ".floyd" / ".supercache_version"
+    if stamp_path.is_file():
+        try:
+            stamped = stamp_path.read_text().strip()
+            if stamped != _CANONICAL_VERSION and _CANONICAL_VERSION != "unknown":
+                return "DRIFTED"
+        except OSError:
+            pass
+    if not report:
+        return "CANDIDATE"
+    last_bootstrap = report.get("_last_verified", "")
+    if last_bootstrap:
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            ts = _dt.fromisoformat(last_bootstrap)
+            age_days = (_dt.now(_tz.utc) - ts.astimezone(_tz.utc)).days
+            if age_days <= 7:
+                return "GOVERNED"
+            return "CANDIDATE"
+        except (ValueError, TypeError):
+            return "CANDIDATE"
+    return "CANDIDATE"
+
+
+def _read_report(proj: _PathLib) -> dict | None:
+    """Read SSOT/repository_report.json if present. Returns None on absence/parse error."""
+    candidates = (
+        proj / "SSOT" / "repository_report.json",
+        proj / "SSOT" / f"{proj.name}_repository_report.json",
+    )
+    for path in candidates:
+        if path.is_file():
+            try:
+                return json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                logger.debug("repository_report.json at %s is unreadable", path)
+                return None
+    return None
+
+
+def _scan_projects() -> list[dict]:
+    """Walk all configured drives and produce the project list."""
+    projects: list[dict] = []
+    for drive in _DRIVES:
+        for proj in _walk_for_projects(drive):
+            report = _read_report(proj)
+            status = _project_status(proj, report)
+            projects.append({
+                "name": proj.name,
+                "path": str(proj),
+                "drive": drive.name,
+                "status": status,
+                "completion_percentage": report.get("completion_percentage", 0) if report else 0,
+                "tech_stack": report.get("tech_stack", []) if report else [],
+                "last_bootstrap": report.get("_last_verified", "") if report else "",
+                "report": report,
+                "links": {
+                    "floyd_md": f"file://{proj}/FLOYD.md",
+                    "ssot": f"file://{proj}/SSOT",
+                    "report_json": f"file://{proj}/SSOT/repository_report.json" if report else None,
+                    "project_root": f"file://{proj}",
+                },
+            })
+    # Sort: completion% desc, then last_bootstrap asc (older bootstrap loses tiebreak)
+    projects.sort(key=lambda p: (-p["completion_percentage"], p["last_bootstrap"]))
+    return projects
+
+
+def _scan_quarantine() -> dict:
+    """Aggregate .floyd/quarantine/ across the project portfolio."""
+    by_project: list[dict] = []
+    total = 0
+    oldest = ""
+    for drive in _DRIVES:
+        for proj in _walk_for_projects(drive):
+            qdir = proj / ".floyd" / "quarantine"
+            if not qdir.is_dir():
+                continue
+            count = 0
+            project_oldest = ""
+            for date_dir in qdir.iterdir():
+                if not date_dir.is_dir():
+                    continue
+                # Count files excluding LEDGER.jsonl and *.WHY.md companions
+                for entry in date_dir.rglob("*"):
+                    if entry.is_file() and not entry.name.endswith(".WHY.md") and entry.name != "LEDGER.jsonl":
+                        count += 1
+                if count > 0 and (not project_oldest or date_dir.name < project_oldest):
+                    project_oldest = date_dir.name
+            if count > 0:
+                total += count
+                by_project.append({
+                    "name": proj.name,
+                    "path": str(proj),
+                    "count": count,
+                    "oldest_date": project_oldest,
+                    "link": f"file://{qdir}",
+                })
+                if not oldest or project_oldest < oldest:
+                    oldest = project_oldest
+    return {"total": total, "oldest_date": oldest, "by_project": by_project}
+
+
+@app.get("/api/projects")
+async def list_projects():
+    """List every governed project with status + repository_report.json data."""
+    now = time.time()
+    if _PROJECTS_CACHE["data"] is not None and (now - _PROJECTS_CACHE["ts"]) < _CACHE_TTL_SECONDS:
+        return {"projects": _PROJECTS_CACHE["data"], "cached": True, "canonical_version": _CANONICAL_VERSION}
+    projects = _scan_projects()
+    _PROJECTS_CACHE["data"] = projects
+    _PROJECTS_CACHE["ts"] = now
+    return {"projects": projects, "cached": False, "canonical_version": _CANONICAL_VERSION}
+
+
+@app.get("/api/quarantine-summary")
+async def quarantine_summary():
+    """Aggregate quarantine state across the project portfolio."""
+    now = time.time()
+    if _QUARANTINE_CACHE["data"] is not None and (now - _QUARANTINE_CACHE["ts"]) < _CACHE_TTL_SECONDS:
+        result = _QUARANTINE_CACHE["data"]
+        return {**result, "cached": True}  # type: ignore[dict-item]
+    result = _scan_quarantine()
+    _QUARANTINE_CACHE["data"] = result
+    _QUARANTINE_CACHE["ts"] = now
+    return {**result, "cached": False}
+
+
+# ---------------------------------------------------------------------------
 # Frontend
 # ---------------------------------------------------------------------------
 

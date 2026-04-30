@@ -329,6 +329,180 @@
         /* Search match count */
         .search-match-count { font-size: 0.7rem; color: var(--accent); opacity: 0.7; white-space: nowrap; padding: 0 4px; }
         .search-match-count.none { color: var(--text); opacity: 0.4; }
+
+        /* ---- ControlBoard nav (top of main-area) ---- */
+        .cb-nav {
+            display: flex; align-items: center; gap: 0;
+            background: var(--bg-header); border-bottom: 1px solid var(--border);
+            padding: 0 8px; flex-shrink: 0;
+        }
+        .cb-nav-tab {
+            padding: 10px 18px; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+            color: var(--text); border: none; background: none;
+            border-bottom: 2px solid transparent;
+            transition: color var(--transition), border-color var(--transition);
+        }
+        .cb-nav-tab:hover { color: var(--text-bright); }
+        .cb-nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .cb-nav-spacer { flex: 1; }
+        .cb-nav-meta {
+            font-size: 0.72rem; opacity: 0.6; padding: 0 12px;
+            display: flex; gap: 12px; align-items: center;
+        }
+        .cb-nav-meta .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+            display: inline-block; margin-right: 4px;
+        }
+        .cb-nav-meta .dot.warn { background: var(--yellow); }
+        .cb-nav-meta .dot.err { background: var(--red); }
+
+        .cb-page { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+        .cb-page.active { display: flex; }
+
+        /* ---- Governance dashboard ---- */
+        .gov-page { padding: 16px; overflow-y: auto; height: 100%; }
+        .gov-quarantine-alert {
+            background: var(--bg-panel); border: 1px solid var(--yellow); border-left: 4px solid var(--yellow);
+            padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 12px; font-size: 0.85rem;
+        }
+        .gov-quarantine-alert.empty { border-color: var(--border); border-left-color: var(--green); opacity: 0.7; }
+        .gov-quarantine-alert .qa-glyph {
+            font-size: 1.2rem; line-height: 1;
+        }
+        .gov-quarantine-alert .qa-body { flex: 1; }
+        .gov-quarantine-alert .qa-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+        .gov-quarantine-alert .qa-link:hover { text-decoration: underline; }
+
+        .gov-summary {
+            display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .gov-summary-card {
+            background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px;
+            padding: 10px 16px; min-width: 120px;
+        }
+        .gov-summary-card .gsc-label {
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+            opacity: 0.6; margin-bottom: 4px;
+        }
+        .gov-summary-card .gsc-value {
+            font-size: 1.4rem; font-weight: 700; color: var(--text-bright);
+        }
+        .gov-summary-card.governed .gsc-value { color: var(--green); }
+        .gov-summary-card.candidate .gsc-value { color: var(--accent); }
+        .gov-summary-card.drifted .gsc-value { color: var(--yellow); }
+        .gov-summary-card.unassessed .gsc-value { color: var(--text); opacity: 0.6; }
+
+        .gov-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 12px;
+        }
+        .gov-card {
+            background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px;
+            padding: 12px 14px; cursor: pointer; transition: border-color var(--transition);
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .gov-card:hover { border-color: var(--accent); }
+        .gov-card.expanded { grid-column: 1 / -1; cursor: default; }
+        .gov-card-head {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .gov-card-name {
+            font-size: 0.95rem; font-weight: 600; color: var(--text-bright);
+            flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .gov-card-pct {
+            font-size: 0.85rem; font-weight: 700; opacity: 0.85; min-width: 48px; text-align: right;
+        }
+        .gov-card-pct.high { color: var(--green); }
+        .gov-card-pct.mid { color: var(--yellow); }
+        .gov-card-pct.low { color: var(--red); }
+        .gov-card-meta {
+            display: flex; gap: 8px; align-items: center; font-size: 0.7rem; opacity: 0.65;
+            flex-wrap: wrap;
+        }
+        .gov-card-meta .stack-pill {
+            background: var(--bg-input); padding: 1px 6px; border-radius: 3px; font-size: 0.65rem;
+        }
+
+        .gov-badge {
+            font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .gov-badge::before { content: ""; display: inline-block; width: 0.7em; }
+        .gov-badge.governed { background: rgba(137, 209, 133, 0.15); color: var(--green); border: 1px solid var(--green); }
+        .gov-badge.governed::before { content: "✓"; }
+        .gov-badge.candidate { background: rgba(108, 178, 247, 0.12); color: var(--accent); border: 1px solid var(--accent); }
+        .gov-badge.candidate::before { content: "○"; }
+        .gov-badge.drifted { background: rgba(220, 220, 170, 0.12); color: var(--yellow); border: 1px solid var(--yellow); }
+        .gov-badge.drifted::before { content: "!"; }
+        .gov-badge.unassessed { background: rgba(180, 180, 180, 0.08); color: var(--text); border: 1px solid var(--border); opacity: 0.7; }
+        .gov-badge.unassessed::before { content: "?"; }
+
+        .gov-card-detail {
+            border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px;
+            font-size: 0.8rem;
+        }
+        .gov-card-detail dt { font-size: 0.68rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+        .gov-card-detail dd { color: var(--text-bright); margin-bottom: 8px; word-break: break-word; }
+        .gov-card-detail dd ul { padding-left: 16px; margin: 0; }
+        .gov-card-detail dd li { margin-bottom: 2px; }
+        .gov-card-detail .gates {
+            display: flex; gap: 6px; flex-wrap: wrap; grid-column: 1 / -1;
+        }
+        .gov-card-detail .gate-pill {
+            font-size: 0.65rem; padding: 2px 8px; border-radius: 3px;
+            background: var(--bg-input); border: 1px solid var(--border);
+        }
+        .gov-card-detail .gate-pill.PASS { color: var(--green); border-color: var(--green); }
+        .gov-card-detail .gate-pill.FAIL { color: var(--red); border-color: var(--red); }
+        .gov-card-detail .gate-pill.WAIVED { color: var(--yellow); border-color: var(--yellow); }
+        .gov-card-detail .gate-pill.UNKNOWN { opacity: 0.5; }
+
+        .gov-card-actions {
+            display: flex; gap: 6px; grid-column: 1 / -1; padding-top: 8px;
+            border-top: 1px dashed var(--border);
+        }
+        .gov-card-actions .btn[disabled] {
+            opacity: 0.45; cursor: not-allowed;
+        }
+        .gov-card-actions .btn[disabled]::after {
+            content: " (Step 7)"; opacity: 0.7; font-weight: 400;
+        }
+        .gov-card-actions .ext-link {
+            font-size: 0.75rem; color: var(--accent); text-decoration: none;
+            padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px;
+        }
+        .gov-card-actions .ext-link:hover { background: var(--bg-input); }
+
+        .gov-empty {
+            text-align: center; padding: 48px 16px; color: var(--text); opacity: 0.6; font-size: 0.9rem;
+        }
+        .gov-loading {
+            padding: 24px; text-align: center; opacity: 0.6; font-size: 0.85rem;
+        }
+        .gov-toolbar {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .gov-toolbar input {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text-bright);
+            padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; outline: none; flex: 0 0 240px;
+        }
+        .gov-toolbar input:focus { border-color: var(--accent); }
+        .gov-toolbar select {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text-bright);
+            padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; outline: none;
+        }
+
+        /* Placeholder pages */
+        .cb-placeholder {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 8px; padding: 48px;
+            color: var(--text); opacity: 0.55; font-size: 0.95rem;
+        }
+        .cb-placeholder strong { font-size: 1.1rem; color: var(--text-bright); opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -471,30 +645,96 @@
 
     <!-- Main area -->
     <div class="main-area">
-        <div class="toolbar">
-            <button class="btn-icon" id="sidebar-toggle" title="Toggle sidebar (Ctrl+B)">☰</button>
-            <span style="font-size:0.85rem; font-weight:600; color:var(--text-bright);">Terminals</span>
-            <span class="spacer"></span>
-            <!-- Layout selector -->
-            <select class="btn btn-sm layout-select" id="layout-select" title="Grid layout">
-                <option value="auto">Auto</option>
-                <option value="1x1">1×1</option>
-                <option value="2x1">2×1</option>
-                <option value="3x1">3×1</option>
-                <option value="2x2">2×2</option>
-            </select>
-            <button class="btn btn-sm" id="save-layout-btn" title="Save current layout">💾</button>
-            <div class="view-toggle">
-                <button class="btn btn-sm active" data-view="grid" title="Grid view">⊞</button>
-                <button class="btn btn-sm" data-view="tabs" title="Tab view">☰</button>
+        <!-- ControlBoard top-level navigation (Step 4 / plans/controlboard.md) -->
+        <nav class="cb-nav" id="cb-nav" aria-label="ControlBoard pages">
+            <button class="cb-nav-tab active" data-cb-page="governance" id="cb-tab-governance">Governance</button>
+            <button class="cb-nav-tab" data-cb-page="terminals" id="cb-tab-terminals">Terminals</button>
+            <button class="cb-nav-tab" data-cb-page="workspace" id="cb-tab-workspace">Workspace</button>
+            <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">Embed</button>
+            <span class="cb-nav-spacer"></span>
+            <span class="cb-nav-meta" id="cb-nav-meta">
+                <span><span class="dot" id="cb-canonical-dot"></span><span id="cb-canonical-text">.supercache: …</span></span>
+                <span id="cb-projects-count">0 projects</span>
+            </span>
+        </nav>
+
+        <!-- Page 1: Governance Dashboard -->
+        <div class="cb-page active" id="cb-page-governance" role="region" aria-labelledby="cb-tab-governance">
+            <div class="gov-page">
+                <!-- Persistent quarantine alert -->
+                <div class="gov-quarantine-alert empty" id="gov-quarantine-alert" role="status" aria-live="polite">
+                    <span class="qa-glyph" aria-hidden="true">✓</span>
+                    <div class="qa-body" id="gov-quarantine-body">No quarantined items across the portfolio.</div>
+                </div>
+
+                <!-- Summary cards -->
+                <div class="gov-summary" id="gov-summary"></div>
+
+                <!-- Filter toolbar -->
+                <div class="gov-toolbar">
+                    <input type="search" id="gov-search" placeholder="Filter by name, stack, status…" autocomplete="off">
+                    <select id="gov-filter-status" title="Filter by status">
+                        <option value="">All statuses</option>
+                        <option value="GOVERNED">Governed</option>
+                        <option value="CANDIDATE">Candidate</option>
+                        <option value="DRIFTED">Drifted</option>
+                        <option value="UNASSESSED">Unassessed</option>
+                    </select>
+                    <button class="btn btn-sm" id="gov-refresh-btn" title="Re-scan drives now">↻ Refresh</button>
+                    <span class="spacer" style="flex:1"></span>
+                    <span style="font-size:0.7rem; opacity:0.55;" id="gov-last-scan"></span>
+                </div>
+
+                <!-- Project grid -->
+                <div class="gov-grid" id="gov-grid">
+                    <div class="gov-loading">Scanning drives…</div>
+                </div>
             </div>
-            <div style="border-left:1px solid var(--border); height:18px; margin:0 4px;"></div>
-            <button class="btn btn-sm" id="broadcast-toggle" title="Broadcast mode (type in one, send to all)">📡 Broadcast</button>
-            <span id="broadcast-count" style="font-size:0.7rem;opacity:0.5;display:none;"></span>
-            <button class="btn-icon" id="cmd-palette-btn" title="Command Palette (Ctrl+K)">⌘</button>
         </div>
-        <div class="tab-bar" id="tab-bar"></div>
-        <div class="grid-container" id="grid-container"></div>
+
+        <!-- Page 2: Terminals (the existing TCC UI) -->
+        <div class="cb-page" id="cb-page-terminals" role="region" aria-labelledby="cb-tab-terminals">
+            <div class="toolbar">
+                <button class="btn-icon" id="sidebar-toggle" title="Toggle sidebar (Ctrl+B)">☰</button>
+                <span style="font-size:0.85rem; font-weight:600; color:var(--text-bright);">Terminals</span>
+                <span class="spacer"></span>
+                <!-- Layout selector -->
+                <select class="btn btn-sm layout-select" id="layout-select" title="Grid layout">
+                    <option value="auto">Auto</option>
+                    <option value="1x1">1×1</option>
+                    <option value="2x1">2×1</option>
+                    <option value="3x1">3×1</option>
+                    <option value="2x2">2×2</option>
+                </select>
+                <button class="btn btn-sm" id="save-layout-btn" title="Save current layout">💾</button>
+                <div class="view-toggle">
+                    <button class="btn btn-sm active" data-view="grid" title="Grid view">⊞</button>
+                    <button class="btn btn-sm" data-view="tabs" title="Tab view">☰</button>
+                </div>
+                <div style="border-left:1px solid var(--border); height:18px; margin:0 4px;"></div>
+                <button class="btn btn-sm" id="broadcast-toggle" title="Broadcast mode (type in one, send to all)">📡 Broadcast</button>
+                <span id="broadcast-count" style="font-size:0.7rem;opacity:0.5;display:none;"></span>
+                <button class="btn-icon" id="cmd-palette-btn" title="Command Palette (Ctrl+K)">⌘</button>
+            </div>
+            <div class="tab-bar" id="tab-bar"></div>
+            <div class="grid-container" id="grid-container"></div>
+        </div>
+
+        <!-- Page 3: Workspace (Step 5 placeholder) -->
+        <div class="cb-page" id="cb-page-workspace" role="region" aria-labelledby="cb-tab-workspace">
+            <div class="cb-placeholder">
+                <strong>Workspace</strong>
+                <span>6-project workspace lands in Step 5 of plans/controlboard.md.</span>
+            </div>
+        </div>
+
+        <!-- Page 4: Embed (Step 13 placeholder) -->
+        <div class="cb-page" id="cb-page-embed" role="region" aria-labelledby="cb-tab-embed">
+            <div class="cb-placeholder">
+                <strong>Embed</strong>
+                <span>MWIDE / infrastructure-map / mac-cleanup-report embeds land in Step 13.</span>
+            </div>
+        </div>
     </div>
 
     <!-- Status bar -->
@@ -1869,6 +2109,252 @@
         }
 
         document.addEventListener('DOMContentLoaded', init);
+    })();
+
+    /* ============================================================
+       ControlBoard navigation + Page 1 (Governance Dashboard)
+       Authority: plans/controlboard.md Step 4
+       Endpoints:
+         GET /api/projects             — project list with status + report
+         GET /api/quarantine-summary   — aggregate quarantine across portfolio
+       ============================================================ */
+    (() => {
+        const $ = (id) => document.getElementById(id);
+
+        // ---- Page switching ----
+        const navTabs = document.querySelectorAll('.cb-nav-tab');
+        const pages = {
+            governance: $('cb-page-governance'),
+            terminals:  $('cb-page-terminals'),
+            workspace:  $('cb-page-workspace'),
+            embed:      $('cb-page-embed'),
+        };
+        let currentPage = 'governance';
+
+        function switchPage(name) {
+            if (!pages[name]) return;
+            currentPage = name;
+            navTabs.forEach(t => t.classList.toggle('active', t.dataset.cbPage === name));
+            Object.entries(pages).forEach(([k, el]) => el.classList.toggle('active', k === name));
+            if (name === 'terminals') {
+                // The existing TCC IIFE owns terminal layout; nudge it to refit.
+                window.dispatchEvent(new Event('resize'));
+            }
+            if (name === 'governance') refreshGovernance();
+        }
+        navTabs.forEach(t => t.addEventListener('click', () => switchPage(t.dataset.cbPage)));
+
+        // ---- Governance state ----
+        let allProjects = [];
+        let canonicalVersion = 'unknown';
+        let lastScanTs = 0;
+        let expandedPath = null;
+
+        // ---- Fetch helpers ----
+        async function fetchProjects() {
+            try {
+                const r = await fetch('/api/projects');
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const j = await r.json();
+                canonicalVersion = j.canonical_version || 'unknown';
+                allProjects = j.projects || [];
+                lastScanTs = Date.now();
+                return j;
+            } catch (e) {
+                console.error('[Governance] fetchProjects failed', e);
+                return null;
+            }
+        }
+        async function fetchQuarantine() {
+            try {
+                const r = await fetch('/api/quarantine-summary');
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return await r.json();
+            } catch (e) {
+                console.error('[Governance] fetchQuarantine failed', e);
+                return null;
+            }
+        }
+
+        // ---- Render ----
+        function renderCanonical() {
+            const dot = $('cb-canonical-dot');
+            const text = $('cb-canonical-text');
+            if (!dot || !text) return;
+            text.textContent = '.supercache: ' + canonicalVersion;
+            dot.className = 'dot' + (canonicalVersion === 'unknown' ? ' err' : '');
+        }
+        function renderQuarantine(q) {
+            const alert = $('gov-quarantine-alert');
+            const body = $('gov-quarantine-body');
+            if (!alert || !body) return;
+            if (!q || q.total === 0) {
+                alert.className = 'gov-quarantine-alert empty';
+                alert.querySelector('.qa-glyph').textContent = '✓';
+                body.textContent = 'No quarantined items across the portfolio.';
+                return;
+            }
+            alert.className = 'gov-quarantine-alert';
+            alert.querySelector('.qa-glyph').textContent = '!';
+            const projects = q.by_project.map(p =>
+                `<a class="qa-link" href="${p.link}">${escapeHtml(p.name)} (${p.count})</a>`
+            ).join(', ');
+            body.innerHTML = `<strong>${q.total}</strong> quarantined item${q.total === 1 ? '' : 's'} ` +
+                `(oldest ${q.oldest_date}) — ${projects}. ` +
+                `Per .supercache/contracts/repo-sanitation.md: agents do not delete; review and restore or accept.`;
+        }
+        function renderSummary(projects) {
+            const counts = { GOVERNED: 0, CANDIDATE: 0, DRIFTED: 0, UNASSESSED: 0 };
+            projects.forEach(p => { counts[p.status] = (counts[p.status] || 0) + 1; });
+            const total = projects.length;
+            const html = [
+                ['Total', total, ''],
+                ['Governed', counts.GOVERNED, 'governed'],
+                ['Candidate', counts.CANDIDATE, 'candidate'],
+                ['Drifted', counts.DRIFTED, 'drifted'],
+                ['Unassessed', counts.UNASSESSED, 'unassessed'],
+            ].map(([label, val, cls]) =>
+                `<div class="gov-summary-card ${cls}">
+                    <div class="gsc-label">${label}</div>
+                    <div class="gsc-value">${val}</div>
+                </div>`
+            ).join('');
+            $('gov-summary').innerHTML = html;
+            $('cb-projects-count').textContent = total + ' project' + (total === 1 ? '' : 's');
+        }
+        function pctClass(pct) {
+            if (pct >= 70) return 'high';
+            if (pct >= 30) return 'mid';
+            return 'low';
+        }
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
+        }
+        function renderCard(p) {
+            const isExpanded = (expandedPath === p.path);
+            const stackPills = (p.tech_stack || []).slice(0, 4).map(s =>
+                `<span class="stack-pill">${escapeHtml(s)}</span>`).join('');
+            const head = `
+                <div class="gov-card-head">
+                    <span class="gov-card-name" title="${escapeHtml(p.path)}">${escapeHtml(p.name)}</span>
+                    <span class="gov-badge ${p.status.toLowerCase()}">${p.status}</span>
+                    <span class="gov-card-pct ${pctClass(p.completion_percentage)}">${p.completion_percentage}%</span>
+                </div>
+                <div class="gov-card-meta">
+                    <span>${escapeHtml(p.drive)}</span>
+                    ${stackPills}
+                    ${p.last_bootstrap ? `<span>· verified ${escapeHtml(p.last_bootstrap.split('T')[0])}</span>` : '<span>· never bootstrapped</span>'}
+                </div>`;
+            if (!isExpanded) return head;
+            return head + renderDetail(p);
+        }
+        function renderDetail(p) {
+            const r = p.report || {};
+            const gateStatuses = r.gate_statuses || {};
+            const gates = ['build_run','primary_journey','automated_tests','e2e_tests','multi_min_human_sim','security','demo']
+                .map(g => `<span class="gate-pill ${gateStatuses[g] || 'UNKNOWN'}">${g.replace(/_/g,' ')}: ${gateStatuses[g] || 'UNKNOWN'}</span>`)
+                .join('');
+            const list = (xs) => Array.isArray(xs) && xs.length
+                ? '<ul>' + xs.slice(0, 6).map(x => `<li>${escapeHtml(x)}</li>`).join('') + '</ul>'
+                : '<em style="opacity:0.5">—</em>';
+            const dispatchDisabled = (p.status !== 'CANDIDATE' && p.status !== 'DRIFTED');
+            return `
+                <div class="gov-card-detail">
+                    <div><dt>Industry</dt><dd>${escapeHtml(r.industry_vertical || '—')}</dd></div>
+                    <div><dt>Business model</dt><dd>${escapeHtml(r.business_model || '—')}</dd></div>
+                    <div><dt>Team min</dt><dd>${r.team_size_minimum != null ? r.team_size_minimum : '—'}</dd></div>
+                    <div><dt>Complexity</dt><dd>${r.complexity_score != null ? r.complexity_score + '/10' : '—'}</dd></div>
+                    <div><dt>GTM timeline</dt><dd>${escapeHtml(r.go_to_market_timeline || '—')}</dd></div>
+                    <div><dt>Scalability needs</dt><dd>${escapeHtml(r.scalability_needs || '—')}</dd></div>
+                    <div><dt>Target users</dt><dd>${list(r.target_users)}</dd></div>
+                    <div><dt>Key features</dt><dd>${list(r.key_features)}</dd></div>
+                    <div><dt>Risks</dt><dd>${list(r.risks)}</dd></div>
+                    <div><dt>Tech debt</dt><dd>${escapeHtml(r.technical_debt || '—')}</dd></div>
+                    <div class="gates"><dt style="grid-column:1/-1">Gates</dt><dd style="grid-column:1/-1">${gates || '<em style="opacity:0.5">no report</em>'}</dd></div>
+                    <div class="gov-card-actions">
+                        <a class="ext-link" href="${p.links.floyd_md}">FLOYD.md</a>
+                        <a class="ext-link" href="${p.links.ssot}">SSOT/</a>
+                        ${p.links.report_json ? `<a class="ext-link" href="${p.links.report_json}">report.json</a>` : ''}
+                        <a class="ext-link" href="${p.links.project_root}">root</a>
+                        <span style="flex:1"></span>
+                        <button class="btn btn-sm" disabled title="Bootstrap dispatch lands in Step 7">▶ Dispatch Bootstrap</button>
+                        <button class="btn btn-sm" disabled title="Finisher dispatch lands in Step 7">▶ Dispatch Finisher</button>
+                    </div>
+                </div>`;
+        }
+        function applyFilters() {
+            const q = $('gov-search').value.trim().toLowerCase();
+            const status = $('gov-filter-status').value;
+            return allProjects.filter(p => {
+                if (status && p.status !== status) return false;
+                if (!q) return true;
+                const hay = [
+                    p.name, p.path, p.drive, p.status,
+                    ...(p.tech_stack || []),
+                    (p.report && p.report.industry_vertical) || '',
+                    (p.report && p.report.business_model) || '',
+                ].join(' ').toLowerCase();
+                return hay.includes(q);
+            });
+        }
+        function renderGrid() {
+            const grid = $('gov-grid');
+            const filtered = applyFilters();
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="gov-empty">No projects match the current filter.</div>`;
+                return;
+            }
+            grid.innerHTML = filtered.map(p => {
+                const expanded = (expandedPath === p.path);
+                return `<div class="gov-card${expanded ? ' expanded' : ''}" data-path="${escapeHtml(p.path)}">${renderCard(p)}</div>`;
+            }).join('');
+            grid.querySelectorAll('.gov-card').forEach(card => {
+                card.addEventListener('click', (ev) => {
+                    if (ev.target.closest('a, button')) return;
+                    const path = card.dataset.path;
+                    expandedPath = (expandedPath === path) ? null : path;
+                    renderGrid();
+                });
+            });
+        }
+        function renderLastScan() {
+            if (!lastScanTs) return;
+            const secs = Math.floor((Date.now() - lastScanTs) / 1000);
+            $('gov-last-scan').textContent =
+                'Last scan ' + (secs < 60 ? `${secs}s ago` : `${Math.floor(secs/60)}m ago`);
+        }
+
+        async function refreshGovernance() {
+            const grid = $('gov-grid');
+            if (!grid.querySelector('.gov-card')) {
+                grid.innerHTML = '<div class="gov-loading">Scanning drives…</div>';
+            }
+            const [_, q] = await Promise.all([fetchProjects(), fetchQuarantine()]);
+            renderCanonical();
+            renderQuarantine(q);
+            renderSummary(allProjects);
+            renderGrid();
+            renderLastScan();
+        }
+
+        // ---- Wire UI events ----
+        $('gov-search').addEventListener('input', renderGrid);
+        $('gov-filter-status').addEventListener('change', renderGrid);
+        $('gov-refresh-btn').addEventListener('click', refreshGovernance);
+
+        // Tick the "last scan" label every 30s
+        setInterval(renderLastScan, 30_000);
+        // Auto-refresh the dashboard when the tab is visible (60s cadence)
+        setInterval(() => {
+            if (currentPage === 'governance' && document.visibilityState === 'visible') {
+                refreshGovernance();
+            }
+        }, 60_000);
+
+        // Initial load — Governance is the default tab
+        document.addEventListener('DOMContentLoaded', refreshGovernance);
     })();
     </script>
 </body>
