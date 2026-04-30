@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legacy AI — Governance Orchestration Dashboard</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --text-dim: #8b949e;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --gray: #484f58;
+  --blue: #58a6ff;
+  --purple: #bc8cff;
+  --orange: #f0883e;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; background: var(--bg); color: var(--text); padding: 24px; }
+h1 { font-size: 1.5em; margin-bottom: 8px; }
+h2 { font-size: 1.1em; margin: 24px 0 12px; color: var(--blue); }
+.summary-bar { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+.summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; min-width: 130px; }
+.summary-card .num { font-size: 2em; font-weight: bold; }
+.summary-card .label { font-size: 0.8em; color: var(--text-dim); }
+.summary-card.governed .num { color: var(--green); }
+.summary-card.drifted .num { color: var(--yellow); }
+.summary-card.ungoverned .num { color: var(--red); }
+.summary-card.nonproject .num { color: var(--gray); }
+.toolbar { display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; align-items: center; }
+.toolbar button, .toolbar select, .toolbar input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 6px; font-family: inherit; cursor: pointer; font-size: 0.9em; }
+.toolbar button:hover { border-color: var(--blue); }
+.toolbar input { min-width: 200px; }
+.refresh-info { font-size: 0.8em; color: var(--text-dim); margin-left: auto; }
+.refresh-info.stale { color: var(--yellow); }
+.project { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin: 10px 0; overflow: hidden; }
+.project-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+.project-header:hover { background: #1c2129; }
+.project-header .arrow { transition: transform 0.2s; font-size: 0.8em; color: var(--text-dim); }
+.project.open .arrow { transform: rotate(90deg); }
+.status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
+.status-badge.governed { background: #1a3a1a; color: var(--green); }
+.status-badge.drifted { background: #3a2e0a; color: var(--yellow); }
+.status-badge.ungoverned { background: #3a1212; color: var(--red); }
+.status-badge.nonproject { background: #1c1c1c; color: var(--gray); }
+.status-badge.candidate { background: #1a2a3a; color: var(--blue); }
+.project-name { font-weight: bold; flex: 1; }
+.project-drive { font-size: 0.8em; color: var(--text-dim); }
+.project-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+.project.open .project-body { display: block; }
+.field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin: 12px 0; }
+.field { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+.field .key { font-size: 0.75em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.field .val { margin-top: 4px; word-break: break-all; }
+.field .evidence { font-size: 0.7em; color: var(--purple); margin-top: 2px; }
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 6px; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.progress-fill.low { background: var(--red); }
+.progress-fill.mid { background: var(--yellow); }
+.progress-fill.high { background: var(--green); }
+.links { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.links a { color: var(--blue); text-decoration: none; font-size: 0.85em; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+.links a:hover { border-color: var(--blue); background: #1a2a3a; }
+.team-section { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 10px 0; }
+.team-section h4 { color: var(--orange); margin-bottom: 6px; }
+.dispatch-btn { background: var(--orange); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+.dispatch-btn:hover { background: #f09b5a; }
+.dispatch-btn:disabled { background: var(--gray); cursor: not-allowed; }
+.export-md { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; max-height: 600px; overflow: auto; display: none; margin-top: 16px; font-size: 0.85em; }
+.gate-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 0.85em; }
+.gate-PASS { color: var(--green); }
+.gate-FAIL { color: var(--red); }
+.gate-UNKNOWN { color: var(--text-dim); }
+.gate-WAIVED { color: var(--yellow); }
+.team-member { padding: 4px 8px; font-size: 0.8em; border-left: 2px solid var(--orange); margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<h1>🜁 Legacy AI — Governance Orchestration Dashboard</h1>
+
+<div class="summary-bar" id="summary"></div>
+
+<div class="toolbar">
+  <select id="statusFilter" onchange="renderProjects()">
+    <option value="all">All Statuses</option>
+    <option value="GOVERNED">Governed</option>
+    <option value="DRIFTED">Drifted</option>
+    <option value="CANDIDATE">Candidate</option>
+    <option value="UNGOVERNED">Ungoverned</option>
+    <option value="NON-PROJECT">Non-Project</option>
+  </select>
+  <select id="driveFilter" onchange="renderProjects()">
+    <option value="all">All Drives</option>
+  </select>
+  <input type="text" id="searchInput" placeholder="Search projects..." oninput="renderProjects()">
+  <button onclick="exportMarkdown()">⟱ Export Markdown</button>
+  <button onclick="loadData()">⟳ Refresh</button>
+  <span class="refresh-info" id="refreshInfo"></span>
+</div>
+
+<div id="exportBlock" class="export-md"></div>
+
+<h2>Projects</h2>
+<div id="projectList"></div>
+
+<script>
+let dashboardData = { projects: [], generated: null, canonical_version: null };
+let openProjects = new Set();
+
+async function loadData() {
+  try {
+    const resp = await fetch('dashboard-data.json?_=' + Date.now());
+    if (!resp.ok) {
+      document.getElementById('projectList').innerHTML = '<p style="color:var(--red)">dashboard-data.json not found. Run scripts/refresh-registry.sh first.</p>';
+      return;
+    }
+    dashboardData = await resp.json();
+    populateDriveFilter();
+    updateRefreshInfo();
+    renderSummary();
+    renderProjects();
+  } catch(e) {
+    document.getElementById('projectList').innerHTML = '<p style="color:var(--red)">Error loading data: ' + e.message + '</p>';
+  }
+}
+
+function updateRefreshInfo() {
+  const el = document.getElementById('refreshInfo');
+  if (!dashboardData.generated) { el.textContent = 'No data loaded'; el.className = 'refresh-info stale'; return; }
+  const gen = new Date(dashboardData.generated);
+  const now = new Date();
+  const hours = (now - gen) / 3600000;
+  el.textContent = 'Last refreshed: ' + gen.toLocaleString();
+  el.className = hours > 24 ? 'refresh-info stale' : 'refresh-info';
+}
+
+function populateDriveFilter() {
+  const drives = new Set();
+  dashboardData.projects.forEach(p => drives.add(p.drive));
+  const sel = document.getElementById('driveFilter');
+  sel.innerHTML = '<option value="all">All Drives</option>';
+  Array.from(drives).sort().forEach(d => {
+    sel.innerHTML += `<option value="${d}">${d}</option>`;
+  });
+}
+
+function renderSummary() {
+  const counts = { GOVERNED: 0, DRIFTED: 0, CANDIDATE: 0, UNGOVERNED: 0, 'NON-PROJECT': 0 };
+  let totalCompletion = 0, governedWithCompletion = 0;
+  dashboardData.projects.forEach(p => {
+    counts[p.status] = (counts[p.status] || 0) + 1;
+    if (p.report && p.report.completion_percentage !== undefined) {
+      totalCompletion += p.report.completion_percentage;
+      governedWithCompletion++;
+    }
+  });
+  const avgComp = governedWithCompletion > 0 ? Math.round(totalCompletion / governedWithCompletion) : '—';
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card governed"><div class="num">${counts.GOVERNED}</div><div class="label">Governed</div></div>
+    <div class="summary-card drifted"><div class="num">${counts.DRIFTED}</div><div class="label">Drifted</div></div>
+    <div class="summary-card ungoverned"><div class="num">${counts.UNGOVERNED}</div><div class="label">Ungoverned</div></div>
+    <div class="summary-card nonproject"><div class="num">${counts['NON-PROJECT']}</div><div class="label">Non-Project</div></div>
+    <div class="summary-card"><div class="num">${counts.CANDIDATE}</div><div class="label">Candidates</div></div>
+    <div class="summary-card"><div class="num">${dashboardData.projects.length}</div><div class="label">Total Dirs</div></div>
+    <div class="summary-card"><div class="num">${avgComp}%</div><div class="label">Avg Completion</div></div>
+    <div class="summary-card"><div class="num">v${dashboardData.canonical_version || '—'}</div><div class="label">Canonical Version</div></div>
+  `;
+}
+
+function renderProjects() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const statusF = document.getElementById('statusFilter').value;
+  const driveF = document.getElementById('driveFilter').value;
+  let filtered = dashboardData.projects.filter(p => {
+    if (statusF !== 'all' && p.status !== statusF) return false;
+    if (driveF !== 'all' && p.drive !== driveF) return false;
+    if (search && !p.name.toLowerCase().includes(search) && !p.path.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  const statusOrder = { DRIFTED: 0, GOVERNED: 1, CANDIDATE: 2, UNGOVERNED: 3, 'NON-PROJECT': 4 };
+  filtered.sort((a, b) => (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5) || a.name.localeCompare(b.name));
+
+  document.getElementById('projectList').innerHTML = filtered.map(p => {
+    const open = openProjects.has(p.name);
+    const statusClass = p.status.toLowerCase().replace('-','');
+    const report = p.report || {};
+    const completion = report.completion_percentage;
+    const compClass = completion === undefined ? '' : completion < 30 ? 'low' : completion < 70 ? 'mid' : 'high';
+    const encodedPath = p.path.replace(/\s/g, '%20');
+    const fileLinks = p.links || {};
+
+    let teamHtml = '';
+    if (p.active_team && p.active_team.members && p.active_team.members.length > 0) {
+      teamHtml = `<div class="team-section"><h4>🜂 Active Team — ${p.active_team.role || 'Unnamed'} (${p.active_team.members.length} members)</h4>`;
+      p.active_team.members.forEach(m => {
+        teamHtml += `<div class="team-member"><strong>${m.name}</strong> — ${m.role || ''} ${m.status ? '[' + m.status + ']' : ''}</div>`;
+      });
+      if (p.active_team.tasks_remaining !== undefined) teamHtml += `<div style="margin-top:6px;font-size:0.85em">Tasks remaining: <strong>${p.active_team.tasks_remaining}</strong></div>`;
+      teamHtml += `</div>`;
+    }
+
+    let gatesHtml = '';
+    if (p.gates && Object.keys(p.gates).length > 0) {
+      gatesHtml = '<div class="team-section"><h4>🜃 Beta Readiness Gates</h4>';
+      Object.entries(p.gates).forEach(([gate, status]) => {
+        gatesHtml += `<div class="gate-row"><span>${gate}</span><span class="gate-${status}">${status}</span></div>`;
+      });
+      gatesHtml += '</div>';
+    }
+
+    let reportHtml = '';
+    if (Object.keys(report).length > 0 && report.completion_percentage !== undefined) {
+      const fields = [
+        ['Completion', report.completion_percentage + '%'],
+        ['Tech Stack', (report.tech_stack || []).join(', ')],
+        ['Complexity', report.complexity_score + '/10'],
+        ['Team Size Min', report.team_size_minimum],
+        ['Go-To-Market', report.go_to_market_timeline],
+        ['Industry', report.industry_vertical],
+        ['Business Model', report.business_model],
+        ['Technical Debt', report.technical_debt + '%'],
+        ['Scalability', report.scalability_needs],
+        ['Target Users', report.target_users],
+        ['Key Features', (report.key_features || []).join('; ')],
+        ['Risks', (report.risks || []).join('; ')]
+      ];
+      reportHtml = fields.filter(f => f[1]).map(f => {
+        const evKey = f[0].toLowerCase().replace(/[\s-]/g,'_');
+        const evidence = (report._evidence || {})[evKey] || (report._evidence || {})[f[0]] || '';
+        return `<div class="field"><div class="key">${f[0]}</div><div class="val">${f[1]}</div>${evidence ? '<div class="evidence">📎 ' + evidence + '</div>' : ''}</div>`;
+      }).join('');
+      if (completion !== undefined) {
+        reportHtml += `<div class="progress-bar"><div class="progress-fill ${compClass}" style="width:${completion}%"></div></div>`;
+      }
+      if (report._verified) reportHtml += '<div style="margin-top:6px;color:var(--green);font-size:0.8em">✅ Verified — ' + (report._critic_rounds||0) + ' critic rounds</div>';
+      else if (report._critic_rounds) reportHtml += '<div style="margin-top:6px;color:var(--yellow);font-size:0.8em">⚠ Unverified — ' + report._critic_rounds + ' rounds</div>';
+    }
+
+    let linksHtml = '';
+    if (Object.keys(fileLinks).length > 0) {
+      linksHtml = '<div class="links">';
+      Object.entries(fileLinks).forEach(([label, url]) => {
+        linksHtml += `<a href="${url}" target="_blank">${label}</a>`;
+      });
+      linksHtml += '</div>';
+    }
+
+    let dispatchHtml = '';
+    if (p.status === 'GOVERNED' || p.status === 'DRIFTED') {
+      const disabled = !report._verified ? 'disabled title="Report must be verified before dispatch"' : '';
+      dispatchHtml = `<button class="dispatch-btn" ${disabled} onclick="dispatchFinisher('${p.name.replace(/'/g,"\\'")}', '${encodedPath}')">🜄 Dispatch Finisher</button>`;
+    } else if (p.status === 'CANDIDATE' || p.status === 'UNGOVERNED') {
+      dispatchHtml = `<button class="dispatch-btn" onclick="dispatchBootstrap('${p.name.replace(/'/g,"\\'")}', '${encodedPath}')">🜁 Dispatch Bootstrapper</button>`;
+    }
+
+    return `
+      <div class="project ${open ? 'open' : ''}" id="proj-${p.name.replace(/[^a-zA-Z0-9]/g,'_')}">
+        <div class="project-header" onclick="toggleProject('${p.name.replace(/'/g,"\\'")}')">
+          <span class="arrow">▶</span>
+          <span class="status-badge ${statusClass}">${p.status}</span>
+          <span class="project-name">${p.name}</span>
+          ${p.stamp_version ? `<span style="color:var(--text-dim);font-size:0.85em">v${p.stamp_version}</span>` : ''}
+          ${p.floyd_version ? `<span style="color:var(--text-dim);font-size:0.8em">(FLOYD v${p.floyd_version})</span>` : ''}
+          <span class="project-drive">${p.drive}</span>
+        </div>
+        <div class="project-body">
+          ${linksHtml}
+          ${reportHtml ? '<div class="field-grid">' + reportHtml + '</div>' : '<p style="color:var(--text-dim)">No repository report filled.</p>'}
+          ${teamHtml}
+          ${gatesHtml}
+          ${dispatchHtml}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleProject(name) {
+  if (openProjects.has(name)) openProjects.delete(name);
+  else openProjects.add(name);
+  renderProjects();
+}
+
+function dispatchBootstrap(name, path) {
+  const prompt = `WORKER ROLE: Project Bootstrapper & Repository Report Specialist\nTARGET: file://${path}\nTASK: Read /Volumes/SanDisk1Tb/.supercache/contracts/governance-entry.md and execute the full bootstrap sequence on this directory. Fill SSOT/repository_report.json per /Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md with minimum 3 critic-check rounds. Do not modify source code.\nCONTRACT: Mandatory execution contract applies.`;
+  copyToClipboard(prompt);
+  alert('Bootstrapper prompt copied to clipboard for: ' + name + '\n\nPaste into a fresh agent context to dispatch.');
+}
+
+function dispatchFinisher(name, path) {
+  const project = dashboardData.projects.find(p => p.name === name);
+  const report = project ? project.report || {} : {};
+  const prompt = `You are the Team Floyd Orchestrator. Read /Users/douglastalley/AGENTS/agents/Team Floyd Orchestrator (Code-Only SSOT + Deterministic Worker Swarm).md.\n\nINTAKE:\n- Repo: file://${path}\n- Completion: ${report.completion_percentage || 'UNKNOWN'}%\n- Tech Stack: ${(report.tech_stack||[]).join(', ') || 'UNKNOWN'}\n- Complexity: ${report.complexity_score || 'UNKNOWN'}/10\n- Business Model: ${report.business_model || 'UNKNOWN'}\n\nTARGET: Beta Release Readiness per the orchestrator contract.\n\nProceed with Phase 0 Intake.`;
+  copyToClipboard(prompt);
+  alert('Finisher orchestrator prompt copied to clipboard for: ' + name + '\n\nPaste into a fresh agent context to dispatch.');
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+function exportMarkdown() {
+  let md = `# Legacy AI — Governance Registry\n\n**Generated:** ${dashboardData.generated || 'N/A'}\n**Canonical Version:** v${dashboardData.canonical_version || '—'}\n**Total Directories:** ${dashboardData.projects.length}\n\n`;
+  const statusOrder = { DRIFTED: 0, GOVERNED: 1, CANDIDATE: 2, UNGOVERNED: 3, 'NON-PROJECT': 4 };
+  const sorted = [...dashboardData.projects].sort((a,b) => (statusOrder[a.status]||5) - (statusOrder[b.status]||5) || a.name.localeCompare(b.name));
+  sorted.forEach(p => {
+    const statusEmoji = { GOVERNED: '🟢', DRIFTED: '🟡', CANDIDATE: '🔵', UNGOVERNED: '🔴', 'NON-PROJECT': '⚫' };
+    md += `## ${statusEmoji[p.status] || '⚪'} ${p.name} — ${p.status}\n\n`;
+    md += `- **Drive:** ${p.drive}\n- **Path:** \`${p.path}\`\n`;
+    if (p.stamp_version) md += `- **Stamp:** v${p.stamp_version}\n`;
+    if (p.floyd_version) md += `- **FLOYD.md:** v${p.floyd_version}\n`;
+    if (p.report && p.report.completion_percentage !== undefined) {
+      md += `- **Completion:** ${p.report.completion_percentage}%\n`;
+      md += `- **Tech Stack:** ${(p.report.tech_stack||[]).join(', ')}\n`;
+      md += `- **Complexity:** ${p.report.complexity_score}/10\n`;
+      md += `- **Verified:** ${p.report._verified ? 'Yes ('+(p.report._critic_rounds||0)+' rounds)' : 'No'}\n`;
+    }
+    if (Object.keys(p.links||{}).length > 0) {
+      md += `- **Links:** ${Object.entries(p.links).map(([l,u]) => `[${l}](${u})`).join(' | ')}\n`;
+    }
+    md += '\n';
+  });
+  const block = document.getElementById('exportBlock');
+  block.textContent = md;
+  block.style.display = 'block';
+  block.scrollIntoView({ behavior: 'smooth' });
+  const blob = new Blob([md], {type: 'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'governance-registry-export.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+loadData();
+</script>
+</body>
+</html>

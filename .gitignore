@@ -1,0 +1,84 @@
+# Legacy Agents — .gitignore
+# Per .supercache/contracts/repo-hygiene.md baselines (Universal + Python)
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.iml
+.vs/
+
+# Secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+secrets.json
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Governance agent state (per project)
+.floyd/
+
+# Python (control-center is FastAPI + Python)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Node (Floyd TTY Bridge / Chrome ext / future tooling)
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+
+# TCC-specific runtime state (these change per session and shouldn't be tracked
+# in the ControlBoard's git, only the schema/defaults)
+control-center/state.json
+control-center/templates.json

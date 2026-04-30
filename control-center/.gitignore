@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime data
+agents.json
+templates.json
+state.json
+layouts.json
+
+# Dotfiles
+.env*
+!.env.example
+
+# OS
+.DS_Store
+
+# Artifacts
+*.log
+*.backup
+*.zip
+test-screenshots/
+tests/artifacts/
+
+# Floyd AI configuration
+.pi/
+.pi-lens/
