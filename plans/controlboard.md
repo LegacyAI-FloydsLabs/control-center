@@ -330,47 +330,69 @@ kill $SERVER_PID
 
 ---
 
-## Step 6 — Page 3 Large Terminal Surface (PARALLEL — can run alongside Step 5)
+## Step 6 — Page 3 Large Terminal Surface — full sidepanel port (PARALLEL — can run alongside Step 5)
 
-**Objective:** Add a "Large Terminal" layout to TCC: two stacked, full-height terminals with quick-toggle between dual / single / triple. Visual concept borrowed from `Floyd TTY Bridge for Chrome/extension/sidepanel.html` — NOT the extension's native-messaging stack.
+**Objective:** Port the **actual** Floyd TTY Bridge sidepanel UI into the ControlBoard as Page 3, replacing the Chrome extension's native-messaging stack with TCC's existing FastAPI WebSocket PTY backend. The result is a dark-themed dual-terminal split-screen view (single/dual/triple toggle) that runs LIVE inside the ControlBoard, with full xterm.js capabilities (WebGL/Canvas/SearchAddon/Unicode11/FitAddon) and TCC's session lifecycle.
+
+**Scope expansion note (2026-04-30):** Original Step 6 was "visual concept only". Douglas's 2026-04-30 surfacing clarified that this needs to be a real, running sidepanel — UI ported, backend rewired. Step 6 now includes the JS port + backend wiring, not just CSS layouts.
 
 **Context brief (cold-start):**
-- TCC's existing layouts (`auto`, `1×1`, `2×1`, `3×1`, `2×2`) live in `control-center/index.html` and `layouts.json`. Adding new layout values: `large-dual`, `large-single`, `large-triple`.
-- The sidepanel.html reference (read-only — do not copy code, only the visual concept): two terminals stacked vertically, taking the full height of the container, with minimal chrome.
-- Toggle: small header control that swaps between large-single / large-dual / large-triple without losing scrollback.
-- Scrollback preservation: the existing TCC frame system already preserves scrollback during layout changes — the new layout just declares grid cells.
-- This layout is selectable from the existing TCC layout switcher; no new top-nav tab.
+- Source: `/Volumes/Storage/Floyd TTY Bridge for Chrome/extension/`
+  - `sidepanel.html` (472 lines) — UI markup with status bar, dual-terminal split, command bar
+  - `sidepanel.js` (read-only ref) — xterm.js TerminalSession class, addon loading (Fit, WebGL, Canvas, Search, Unicode11), Live API integration via `live-service.js`
+  - `manifest.json` — Chrome extension config (irrelevant to the port)
+  - `native_host.py`, `background.js`, `content-script.js` — Chrome native messaging stack (DO NOT PORT — replaced by TCC's WebSocket PTY)
+- Target: a new "Terminal Surface" view in `control-center/index.html` (or a separate `control-center/static/sidepanel-view.html` served at `/sidepanel`), with vendored xterm + addons under `control-center/static/sidepanel/`.
+- Backend: TCC already exposes WebSocket terminal sessions per agent. Sidepanel terminals become ephemeral TCC agents (session-scoped, not persisted to `agents.json`) bound to xterm.js panes via the existing WebSocket PTY plumbing.
+- Toggle: single / dual / triple full-height terminals. Scrollback preserved on toggle (TCC frames already do this).
+- Theme: keep the sidepanel's original cyberpunk dark theme on this view (acceptable exception to the light-default rule — this is a tools view, not the dashboard).
+- Live API integration (`live-service.js`): out of scope for v1; document as a follow-up issue.
 
 **Tasks:**
-1. Read `Floyd TTY Bridge for Chrome/extension/sidepanel.html` to understand the visual concept (do not copy code)
-2. Add `large-single`, `large-dual`, `large-triple` to the layout enum in `index.html`
-3. Add CSS grid templates for each (full container height, minimal chrome)
-4. Add layout toggle control (3-button group on the terminal toolbar)
-5. Verify scrollback is preserved across layout transitions
-6. Tests: layout switching test with Playwright (TCC already has Playwright setup per OPERATIONS.md)
-7. Manual smoke: switch to large-dual, type into both terminals, switch to large-triple, verify scrollback persists
-8. Commit
+1. Inventory source files: `sidepanel.html`, `sidepanel.js`, `lib/xterm.css`, any addon JS used. Note the WebGL/Canvas/Search/Unicode11/Fit addons.
+2. Vendor xterm + addons into `control-center/static/sidepanel/` (skip the node_modules path; pin a specific xterm version in `requirements`-equivalent for frontend, e.g., `package.json` if added)
+3. Port the markup: take `sidepanel.html`, strip Chrome-extension references, keep status bar + dual-terminal grid + command bar
+4. Port `TerminalSession` class from `sidepanel.js`: keep the xterm setup + addon loading; **replace** the native-messaging send/receive layer with WebSocket calls to TCC's existing `/ws/{agent_id}` endpoint
+5. Add `POST /api/sidepanel/spawn` endpoint that creates an ephemeral TCC agent (auto-deleted on disconnect): `name = "sidepanel-<uuid-short>"`, `directory = $HOME` by default, `command = bash` (or shell from FLOYD.md if available)
+6. Add `DELETE /api/sidepanel/{agent_id}` endpoint that stops + deletes the ephemeral agent
+7. Add layout toggle (single/dual/triple) with scrollback preservation
+8. Tests: ephemeral agent lifecycle, WebSocket attach/detach, layout toggle preserves scrollback (Playwright)
+9. Manual smoke: open Terminal Surface view, spawn dual session, type into both panes, toggle to triple, type into the new pane, toggle back to dual, verify both original sessions still alive with full scrollback
+10. Commit
 
 **Files touched:**
-- MODIFIED: `control-center/index.html` (CSS + JS for new layouts)
-- NEW: `control-center/tests/test_large_layouts.py` (Playwright E2E)
+- NEW: `control-center/static/sidepanel/sidepanel.html` (ported markup)
+- NEW: `control-center/static/sidepanel/sidepanel.js` (ported JS, native-messaging replaced with WebSocket)
+- NEW: `control-center/static/sidepanel/xterm/` (vendored xterm + addons)
+- MODIFIED: `control-center/server.py` (2 new endpoints, ~80 lines)
+- MODIFIED: `control-center/index.html` (top-nav tab to Terminal Surface view)
+- NEW: `control-center/tests/test_sidepanel_lifecycle.py` (pytest)
+- NEW: `control-center/tests/test_sidepanel_layouts.py` (Playwright E2E)
+- POSSIBLE NEW: `control-center/package.json` if vendoring xterm via npm
 
 **Verification:**
 ```bash
 cd "/Volumes/Storage/Legacy Agents/control-center"
-.venv/bin/python -m pytest tests/test_large_layouts.py -v
-# Manual: select Layout > Large Dual; verify 2 stacked full-height terminals; toggle to Triple; verify 3
+.venv/bin/python -m pytest tests/test_sidepanel_lifecycle.py -v
+.venv/bin/python -m pytest tests/test_sidepanel_layouts.py -v
+.venv/bin/python server.py &
+SERVER_PID=$!
+sleep 2
+curl -s -X POST http://localhost:10527/api/sidepanel/spawn | jq -r '.agent_id'
+# Manual: open Terminal Surface tab; verify dual full-height terminals; type bash commands in each; toggle to triple; verify
 ```
 
-**Rollback:** `git revert HEAD`.
+**Rollback:** `git revert HEAD`. Vendored xterm files removed; ephemeral agents auto-cleanup on server restart.
 
-**Exit criteria:** Three new layouts work. Scrollback preserved across transitions. Playwright test passes.
+**Exit criteria:** Sidepanel UI ported. WebSocket PTY wired. Single/dual/triple toggle works. Scrollback preserved. Tests pass.
 
-**Model tier:** default
+**Model tier:** default (mostly mechanical port + endpoint wiring; xterm patterns are well-known)
 
 **Depends on:** Step 1 (port migration; no dependency on Steps 3 or 4)
 
-**Parallelizable with:** Step 5, Step 9, Step 10
+**Parallelizable with:** Step 5, Step 9, Step 10, Step 12 (System Health), Step 13 (Infrastructure)
+
+**Open follow-up issue (Step 6+1):** Port `live-service.js` (Gemini Live audio integration) — defer to its own step after v1 ships
 
 ---
 
@@ -637,13 +659,133 @@ kill $SERVER_PID
 
 ---
 
+---
+
+## Step 12 — Page 5: Mac System Health (cleanup report LIVE) — PARALLEL
+
+**Objective:** Add a "System Health" page to the ControlBoard that runs the Mac cleanup scan LIVE — disk-space recoverable from rarely-used apps + memory pressure from heavy processes — and renders the result with the same dark-themed layout as the prior one-shot HTML report. The page auto-refreshes the data periodically; the user can also trigger an on-demand re-scan.
+
+**Context brief (cold-start):**
+- Source one-shot report (read-only, for visual reference + recommended sections):
+  `/Users/douglastalley/Library/Application Support/Claude/local-agent-mode-sessions/2e47ec60-1710-48c1-9ba7-a1c2f7c6f7a4/2f8223c9-7dfa-4f78-b1ed-16a30c7b4da5/local_fadc35f0-cdc6-411a-904f-4e892c1cc0a1/outputs/mac-cleanup-report.html` (524 lines — stats grid + sortable table + recommendations cards)
+- The original report was generated by a one-shot Claude Code scan; this step re-implements the scan deterministically as `control-center/scripts/system_scan.py` so the data is reproducible and refreshable.
+- Scan inputs (per the original session prompt captured in `audit.jsonl`):
+  - `/Applications/*.app` and `~/Applications/*.app` — bundle sizes (`du -sh`), last-used dates (`mdls -name kMDItemLastUsedDate`), recommendations
+  - Memory: `ps -axco pid,rss,pcpu,comm` sorted by RSS — top processes + helpers
+  - Special focus on user-flagged hogs: Chrome, OpenCode, Notion, Floyd helpers (`superfloyd_*`, `floyd-lab-server`, `floyd4`)
+  - Disk recovery candidates: apps not used in 90+ days, sorted by size descending
+- The page renders in the cleanup report's dark style (deliberate exception to the light-default rule — this is a dense data view, dark works better).
+- Auto-refresh cadence: every 5 minutes; manual "Re-scan now" button triggers immediate refresh.
+- Caching: scan output cached in `control-center/.floyd/system-health-cache.json`; the page reads from cache; the scan script writes to cache.
+
+**Tasks:**
+1. Author `control-center/scripts/system_scan.py` (Python, type-annotated):
+   - `scan_apps()` → list of `{name, path, size_mb, last_used_iso, days_idle, recommendation}` — `recommendation` ∈ {`keep`, `consider`, `remove`}
+   - `scan_memory()` → list of `{process_name, pid_count, rss_gb, pct_total, classification}` — `classification` ∈ {`system`, `keep`, `consider`, `tame`}
+   - `scan_disk_recovery_candidates()` → top-N apps idle >90 days sorted by size descending
+   - Output: writes JSON to `control-center/.floyd/system-health-cache.json` with timestamp
+2. Add `GET /api/system-health` to `server.py` — returns cached JSON (or triggers scan if cache > 5 min old)
+3. Add `POST /api/system-health/rescan` — synchronous re-scan (bounded to 30s); returns fresh JSON
+4. Add System Health view in `control-center/index.html` (or a separate `static/system-health.html` served at `/system-health`) — uses the cleanup report's CSS tokens + structure
+5. Render: stats cards (total recoverable disk GB, current memory free, top hog, idle app count) + sortable apps table + memory hogs table + recommendations cards
+6. Wire: page polls `/api/system-health` every 5 min; "Re-scan" button hits `/api/system-health/rescan`
+7. Tests: `scripts/system_scan.py` unit tests on synthetic /Applications fixture; endpoint tests
+8. Manual smoke: open System Health page; verify stats match `du -sh /Applications/*.app | sort -h | tail -10` and `ps aux | sort -k4 -nr | head` order
+9. Commit
+
+**Files touched:**
+- NEW: `control-center/scripts/system_scan.py`
+- NEW: `control-center/static/system-health.html` (or block in `index.html`)
+- MODIFIED: `control-center/server.py` (2 new endpoints)
+- MODIFIED: `control-center/index.html` (top-nav tab)
+- NEW: `control-center/tests/test_system_scan.py`
+- NEW: `control-center/tests/test_system_health_endpoint.py`
+- NEW (per scan): `control-center/.floyd/system-health-cache.json`
+
+**Verification:**
+```bash
+cd "/Volumes/Storage/Legacy Agents/control-center"
+.venv/bin/python -m pytest tests/test_system_scan.py tests/test_system_health_endpoint.py -v
+.venv/bin/python scripts/system_scan.py
+jq -r '.apps | length' .floyd/system-health-cache.json
+.venv/bin/python server.py &
+SERVER_PID=$!
+sleep 2
+curl -s http://localhost:10527/api/system-health | jq -r '.scanned_at, (.apps | length), (.memory_hogs | length)'
+```
+
+**Rollback:** `git revert HEAD`.
+
+**Exit criteria:** Scan runs cleanly. Endpoint serves data. Page renders. Re-scan button works.
+
+**Model tier:** default
+
+**Depends on:** Step 1 (only)
+
+**Parallelizable with:** Steps 5, 6, 9, 10, 13
+
+---
+
+## Step 13 — Page 6: Infrastructure Cartography (embed) — PARALLEL
+
+**Objective:** Add an "Infrastructure" page to the ControlBoard that displays the existing Legacy AI infrastructure map at `~/Downloads/Legacy_AI_Delivery_Architecture_Package/network-map/infrastructure-map.html`. The map covers IONOS, Vercel, Hostinger, Railway, Supabase, DigitalOcean, GCP, GitHub, and the local AI stack. Static content; no live backend in v1.
+
+**Context brief (cold-start):**
+- Source: `/Users/douglastalley/Downloads/Legacy_AI_Delivery_Architecture_Package/network-map/infrastructure-map.html` (1451 lines)
+- Embeds CSS via Google Fonts CDN (IBM Plex Mono/Sans, Fraunces); cartographic dark theme with color-coded provider sections
+- Multi-tab nav at the top of the page (sticky)
+- Static hardcoded provider cards — no backend, no fetch
+- Decision: copy the file into `control-center/static/infrastructure-map.html` (vendored, version-pinned to today's content) and embed via iframe on the ControlBoard page. If the source updates, run a refresh script to re-vendor.
+
+**Tasks:**
+1. Copy `infrastructure-map.html` into `control-center/static/infrastructure-map.html`
+2. Audit copied file for any local file refs (relative paths, absolute paths to Downloads/) — fix any that would break inside the static folder
+3. Add `GET /infrastructure-map.html` route (FastAPI's StaticFiles already serves from `static/`)
+4. Add Infrastructure top-nav tab in `index.html` — renders an iframe with `src="/infrastructure-map.html"`, full container height
+5. Author `scripts/refresh-infrastructure-map.sh` (one-liner: `cp <source> static/infrastructure-map.html`) for future re-vendor
+6. Document in `docs/infrastructure-map.md`: source location, how to refresh, version pinning policy
+7. Tests: smoke test the iframe element renders + `/infrastructure-map.html` returns 200 with the expected first 100 chars
+8. Commit
+
+**Files touched:**
+- NEW (vendored): `control-center/static/infrastructure-map.html` (~1451 lines copied)
+- NEW: `control-center/scripts/refresh-infrastructure-map.sh`
+- NEW: `control-center/docs/infrastructure-map.md`
+- MODIFIED: `control-center/index.html` (Infrastructure top-nav tab)
+- NEW: `control-center/tests/test_infrastructure_map.py`
+
+**Verification:**
+```bash
+cd "/Volumes/Storage/Legacy Agents/control-center"
+.venv/bin/python -m pytest tests/test_infrastructure_map.py -v
+.venv/bin/python server.py &
+SERVER_PID=$!
+sleep 2
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:10527/infrastructure-map.html   # expect 200
+# Manual: open Infrastructure tab; verify map renders, tabs interact, no broken assets
+```
+
+**Rollback:** `git revert HEAD`.
+
+**Exit criteria:** Map page accessible at `/infrastructure-map.html`. Top-nav tab embeds it cleanly. No broken assets.
+
+**Model tier:** default
+
+**Depends on:** Step 1 (only)
+
+**Parallelizable with:** Steps 5, 6, 9, 10, 12
+
+---
+
 ## Dependency graph
 
 ```
 Step 1 ─┬─> Step 2 ─> Step 3 ─> Step 4 ─┬─> Step 5  (parallel)
-        │                                ├─> Step 6  (parallel)
-        │                                ├─> Step 9  (parallel)
-        │                                ├─> Step 10 (parallel)
+        │                                ├─> Step 6  (parallel — sidepanel port + WebSocket rewire)
+        │                                ├─> Step 9  (parallel — MWIDE)
+        │                                ├─> Step 10 (parallel — CURSE'M launcher)
+        │                                ├─> Step 12 (parallel — System Health)
+        │                                ├─> Step 13 (parallel — Infrastructure embed)
         │                                └─> Step 7 ─> Step 8 ─> Step 11
         └─> v1.6.0/v1.6.1 governance bumps must apply BEFORE Step 2 starts
 ```
@@ -658,17 +800,19 @@ Step 1 ─┬─> Step 2 ─> Step 3 ─> Step 4 ─┬─> Step 5  (parallel)
 
 ## Tracker
 
-- [ ] Step 1 — Foundation reset
-- [ ] Step 2 — Quarantine superseded DeepSeek artifacts
+- [x] Step 1 — Foundation reset (commit `b50ffa8` 2026-04-30T12:13)
+- [!] Step 2 — Quarantine superseded DeepSeek artifacts _(blocked: v1.6.1 INSTALL.sh not yet applied → no `floyd-quarantine` helper installed yet)_
 - [ ] Step 3 — repository_report.json schema + populator (**strongest model**)
 - [ ] Step 4 — Page 1 Governance Dashboard
 - [ ] Step 5 — Page 2 Six-Project Workspace _(parallel-eligible)_
-- [ ] Step 6 — Page 3 Large Terminal Surface _(parallel-eligible)_
+- [ ] Step 6 — Page 3 Large Terminal Surface — **full sidepanel port + WebSocket rewire** _(parallel-eligible)_
 - [ ] Step 7 — Bootstrap Worker prompt + Dispatch Bootstrap (**strongest model**)
 - [ ] Step 8 — First batch of CANDIDATE projects bootstrapped end-to-end
 - [ ] Step 9 — Page 4 MWIDE embed _(parallel-eligible)_
 - [ ] Step 10 — FLOYD CURSE'M launcher _(parallel-eligible)_
 - [ ] Step 11 — Dispatch Finisher + Orchestrator integration (**strongest model**)
+- [ ] Step 12 — Page 5: Mac System Health (cleanup report LIVE) _(parallel-eligible, added 2026-04-30)_
+- [ ] Step 13 — Page 6: Infrastructure Cartography (embed) _(parallel-eligible, added 2026-04-30)_
 
 ## Plan mutation protocol
 
@@ -677,6 +821,8 @@ If a step needs to split, insert, skip, reorder, or abandon: append an audit ent
 ## Change Log
 
 - 2026-04-30T11:14 — Plan generated by `/blueprint controlboard`. 11 steps. Critical path 7. Parallel side branches at Steps 5, 6, 9, 10. Three steps assigned strongest model: 3 (schema), 7 (dispatch), 11 (orchestrator).
+- 2026-04-30T12:35 — Plan grew from 11 → 13 steps after Douglas surfaced three additional integration targets. Step 6 scope expanded from "visual concept only" to a full port of `Floyd TTY Bridge for Chrome/extension/sidepanel.html` with native messaging replaced by TCC's WebSocket PTY backend. Two new parallel-eligible steps added: **Step 12** (Mac System Health — live re-runnable scan + dark-themed report served at `/system-health`, derived from prior one-shot `mac-cleanup-report.html`) and **Step 13** (Infrastructure Cartography — vendored copy of `Legacy_AI_Delivery_Architecture_Package/network-map/infrastructure-map.html` embedded in the ControlBoard via iframe). Critical path unchanged at 7 steps; parallel side branches now total 6 (Steps 5, 6, 9, 10, 12, 13).
+- 2026-04-30T12:13 — **Step 1 executed**. Commit `b50ffa8` lands. 55 files / 13,101 lines. git init at project root, all foundation file customization complete, venv built (Python 3.14.3 + FastAPI 0.136.1 + uvicorn 0.46.0 + pydantic 2.13.3), smoke-bind on port 10527 verified. Port-registry diff staged at `.floyd/port-claim-diff.md` for Douglas. Step 2 blocked pending v1.6.1 INSTALL.sh apply (needs `floyd-quarantine` helper).
 - 2026-04-30T11:18 — Adversarial review pass (Opus). Six critical findings fixed in place:
   1. Step 1: removed inappropriate `floyd-quarantine` calls for rsync-artifact `agents.json`/`state.json` (those weren't part of project history; simple overwrite is correct). Added `make venv` + smoke-bind step.
   2. Step 3: changed test fixtures from `Legacy Agents` itself + `control-center` itself to external projects (`floyd-harness`, `Floyd Docs`) to avoid chicken-and-egg self-bootstrap. Pinned `team_size_minimum` rubric to existing `legacy-team-architect.py`.
