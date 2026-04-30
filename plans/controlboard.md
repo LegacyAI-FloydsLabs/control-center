@@ -330,11 +330,13 @@ kill $SERVER_PID
 
 ---
 
-## Step 6 — Page 3 Large Terminal Surface — full sidepanel port (PARALLEL — can run alongside Step 5)
+## Step 6 — Dual Terminal tab — full port of the Floyd TTY Bridge UI (PARALLEL — can run alongside Step 5)
 
-**Objective:** Port the **actual** Floyd TTY Bridge sidepanel UI into the ControlBoard as Page 3, replacing the Chrome extension's native-messaging stack with TCC's existing FastAPI WebSocket PTY backend. The result is a dark-themed dual-terminal split-screen view (single/dual/triple toggle) that runs LIVE inside the ControlBoard, with full xterm.js capabilities (WebGL/Canvas/SearchAddon/Unicode11/FitAddon) and TCC's session lifecycle.
+**Objective:** Add a top-level **Dual Terminal** tab to the ControlBoard that ports the existing Floyd TTY Bridge UI (currently in `Floyd TTY Bridge for Chrome/extension/sidepanel.html` — file is just *named* sidepanel because the source was a Chrome side panel; this is a full-size two-pane terminal view, no tmux). Replace the Chrome extension's native-messaging stack with TCC's existing FastAPI WebSocket PTY backend. The result is a full-tab dual-terminal view with full xterm.js capabilities (WebGL/Canvas/SearchAddon/Unicode11/FitAddon) and TCC's session lifecycle.
 
-**Scope expansion note (2026-04-30):** Original Step 6 was "visual concept only". Douglas's 2026-04-30 surfacing clarified that this needs to be a real, running sidepanel — UI ported, backend rewired. Step 6 now includes the JS port + backend wiring, not just CSS layouts.
+**Naming note:** The source HTML is `sidepanel.html` for historical reasons (Chrome extension side panel). On the ControlBoard, this becomes the **Dual Terminal** tab — peer of MWIDE, CURSE'M, ATerm, Governance, Workspace, Infrastructure, System Health, etc. It is NOT a side panel; it is a full-size top-level tab with two independent terminal sessions.
+
+**Scope expansion note (2026-04-30):** Original Step 6 was "visual concept only / new layout option in the existing TCC layout switcher". Douglas's 2026-04-30 surfacing clarified two things: (1) this is a full port of the actual sidepanel UI + xterm.js code, not just visual reference; (2) it lives as its own top-level tab (not as a sub-layout inside the existing terminal grid), peer with the other ControlBoard tabs. Step 6 scope adjusted accordingly.
 
 **Context brief (cold-start):**
 - Source: `/Volumes/Storage/Floyd TTY Bridge for Chrome/extension/`
@@ -554,45 +556,63 @@ grep -c "{{PORT}}" /Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE/FLOYD.md   # expect:
 
 ---
 
-## Step 10 — FLOYD CURSE'M launcher hot-button (PARALLEL)
+## Step 10 — CURSE'M tab + sticky launcher button (PARALLEL)
 
-**Objective:** Sticky button on the ControlBoard that one-click launches `/Applications/FLOYD CURSE'M.app`. No embed; just a launcher with a confirm dialog.
+**Objective:** Add a top-level **CURSE'M** tab to the ControlBoard AND keep a sticky one-click launcher button in the header. The tab is the workflow surface — launcher buttons for various scenarios, recent-job log, current-state indicator, common-task shortcuts, optional VS Code workspace shortcuts. The sticky button stays for the "I need it now" one-click case.
 
 **Context brief (cold-start):**
-- FLOYD CURSE'M.app is at `/Applications/FLOYD CURSE'M.app/`. Launching is `open -a "FLOYD CURSE'M"`.
-- Button placement: top-right corner of the ControlBoard, sticky across all 4 pages.
-- Confirm dialog: avoid accidental launches; show a "Launch CURSE'M for big jobs?" with explicit confirm.
-- Backend: `POST /api/launch-cursem` runs `subprocess.run(["open", "-a", "FLOYD CURSE'M"])`. Return launch status.
+- `/Applications/FLOYD CURSE'M.app/` is a VS Code-based heavy IDE. Launch via `open -a "FLOYD CURSE'M"` (whole app) or `open -a "FLOYD CURSE'M" /path/to/dir` (with a folder open).
+- It's also reachable as the `floyd-code`/`code` symlink in `~/.local/bin/` (per the earlier ls output: `code -> "/Applications/FLOYD CURSE'M.app/Contents/Resources/app/bin"/code`).
+- Tab content (per generous interpretation):
+  - Big launcher button (cold start)
+  - "Open recent project" buttons — 5 most-recently-touched projects (read from `repository_report.json` `last_bootstrap` ordering)
+  - Common-task shortcuts: "Open this ControlBoard repo", "Open Floyd Docs", "Open the active controlboard plan file" — each opens CURSE'M with the right path
+  - Recent-job log (sessions where CURSE'M was launched from the ControlBoard, with timestamp + project + outcome if known)
+  - Current-state indicator (running / idle — detected via `pgrep` for CURSE'M's executable name)
+  - Shortcuts to common CURSE'M tasks Douglas has surfaced over time (rotate as patterns emerge)
+- Sticky header button: same as before — top-right, all tabs, confirm dialog avoiding accidental launches.
 
 **Tasks:**
-1. Add `POST /api/launch-cursem` endpoint to `server.py`
-2. Add sticky button to `index.html`
-3. Add confirm dialog
-4. Tests: endpoint behavior with a mocked subprocess call
-5. Manual: click button, confirm, verify CURSE'M.app launches
-6. Commit
+1. Add `POST /api/launch-cursem` endpoint — accepts optional `{path: str}`; if present, runs `open -a "FLOYD CURSE'M" "$path"`, else bare launch
+2. Add `GET /api/cursem-state` — returns `{running: bool, pids: [...], recent_jobs: [...]}` from `pgrep -af "FLOYD CURSE'M"` + `.floyd/cursem-history.jsonl`
+3. Append every launch to `.floyd/cursem-history.jsonl` (jsonl append-only, schema: `{ts, path, launched_by, pid_at_launch}`)
+4. Sticky launcher button in `index.html` header (existed in original Step 10)
+5. CURSE'M tab in `index.html` with:
+   - Cold launcher button
+   - "Open recent project" 5-button row populated from top-5 recently-bootstrapped projects
+   - Common-task shortcut buttons (initially: open ControlBoard repo, open Floyd Docs, open controlboard.md plan file)
+   - Recent-job log table (last 50 launches)
+   - Current-state pill (green/gray dot)
+6. Confirm dialog on cold launches (avoidable when launching with a known path)
+7. Tests: endpoint behavior with mocked subprocess; history append; recent-projects ranking
+8. Manual smoke: open CURSE'M tab, click "Open this ControlBoard repo", verify CURSE'M opens at `/Volumes/Storage/Legacy Agents/`; verify history table updates
+9. Commit
 
 **Files touched:**
-- MODIFIED: `control-center/server.py` (1 new endpoint, ~30 lines)
-- MODIFIED: `control-center/index.html` (button + confirm dialog)
-- NEW: `control-center/tests/test_launch_cursem.py`
+- MODIFIED: `control-center/server.py` (2 endpoints, ~80 lines)
+- MODIFIED: `control-center/index.html` (CURSE'M tab + sticky button)
+- NEW (per launch): `control-center/.floyd/cursem-history.jsonl`
+- NEW: `control-center/tests/test_cursem_launcher.py`
+- NEW: `control-center/tests/test_cursem_history.py`
 
 **Verification:**
 ```bash
 cd "/Volumes/Storage/Legacy Agents/control-center"
-.venv/bin/python -m pytest tests/test_launch_cursem.py -v
-# Manual: click sticky button > confirm > FLOYD CURSE'M.app opens
+.venv/bin/python -m pytest tests/test_cursem_launcher.py tests/test_cursem_history.py -v
+.venv/bin/python server.py &
+sleep 2
+curl -s http://localhost:10527/api/cursem-state | jq .
 ```
 
 **Rollback:** `git revert HEAD`.
 
-**Exit criteria:** Button visible on every page. Confirm dialog works. CURSE'M.app launches on confirm.
+**Exit criteria:** CURSE'M tab works. Sticky button works. Recent-projects ranking accurate. History append-only. State detection correct.
 
 **Model tier:** default
 
-**Depends on:** Step 1 (only)
+**Depends on:** Step 1 (sticky button); Step 4 (tab nav scaffolding for the full tab)
 
-**Parallelizable with:** Steps 5, 6, 9
+**Parallelizable with:** Steps 5, 6, 9, 12, 13, 14, 15, 16, 17
 
 ---
 
@@ -802,10 +822,10 @@ Step 1 ─┬─> Step 2 ─> Step 3 ─> Step 4 ─┬─> Step 5  (parallel)
 
 - [x] Step 1 — Foundation reset (commit `b50ffa8` 2026-04-30T12:13)
 - [!] Step 2 — Quarantine superseded DeepSeek artifacts _(blocked: v1.6.1 INSTALL.sh not yet applied → no `floyd-quarantine` helper installed yet)_
-- [ ] Step 3 — repository_report.json schema + populator (**strongest model**)
+- [x] Step 3 — repository_report.json schema + populator (commit pending; populator + 13 tests + 2 external fixtures captured 2026-04-30T17:02)
 - [ ] Step 4 — Page 1 Governance Dashboard
 - [ ] Step 5 — Page 2 Six-Project Workspace _(parallel-eligible)_
-- [ ] Step 6 — Page 3 Large Terminal Surface — **full sidepanel port + WebSocket rewire** _(parallel-eligible)_
+- [ ] Step 6 — **Dual Terminal tab** — full port of TTY Bridge UI + WebSocket rewire (top-level tab, NOT a sidepanel) _(parallel-eligible)_
 - [ ] Step 7 — Bootstrap Worker prompt + Dispatch Bootstrap (**strongest model**)
 - [ ] Step 8 — First batch of CANDIDATE projects bootstrapped end-to-end
 - [ ] Step 9 — Page 4 MWIDE embed _(parallel-eligible)_
