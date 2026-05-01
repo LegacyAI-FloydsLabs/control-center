@@ -496,6 +496,41 @@
             padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; outline: none;
         }
 
+        /* ---- MWIDE embed ---- */
+        .mwide-frame-wrap {
+            display: flex; flex-direction: column; height: 100%; background: #0d1117;
+        }
+        .mwide-toolbar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; background: var(--bg-header);
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+            font-size: 0.85rem; color: var(--text-bright);
+        }
+        .mwide-toolbar a.btn { text-decoration: none; }
+        .mwide-toolbar #mwide-status.up { color: var(--green); }
+        .mwide-toolbar #mwide-status.down { color: var(--red); }
+        .mwide-toolbar #mwide-status.checking { color: var(--yellow); }
+        .mwide-frame-container {
+            position: relative; flex: 1; display: flex; min-height: 0;
+        }
+        .mwide-fallback {
+            position: absolute; inset: 0; display: none;
+            background: #0d1117; color: #e6edf3;
+            padding: 32px; overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .mwide-fallback.visible { display: block; }
+        .mwide-fallback h2 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #f85149; }
+        .mwide-fallback p { margin-bottom: 0.8rem; color: #8b949e; }
+        .mwide-fallback pre {
+            background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+            padding: 12px; font-family: 'SF Mono', Menlo, monospace; font-size: 0.8rem;
+            color: #58a6ff; margin-bottom: 1rem; white-space: pre-wrap; word-break: break-all;
+        }
+        .mwide-fallback code {
+            background: #161b22; padding: 1px 4px; border-radius: 3px; color: #58a6ff;
+        }
+
         /* ---- System Health (dark, mirrors mac-cleanup-report.html) ---- */
         .cb-page#cb-page-health { background: #0d1117; color: #e6edf3; }
         .health-page {
@@ -740,6 +775,7 @@
             <button class="cb-nav-tab active" data-cb-page="governance" id="cb-tab-governance">Governance</button>
             <button class="cb-nav-tab" data-cb-page="terminals" id="cb-tab-terminals">Terminals</button>
             <button class="cb-nav-tab" data-cb-page="workspace" id="cb-tab-workspace">Workspace</button>
+            <button class="cb-nav-tab" data-cb-page="mwide" id="cb-tab-mwide">MWIDE</button>
             <button class="cb-nav-tab" data-cb-page="health" id="cb-tab-health">System Health</button>
             <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">Infrastructure</button>
             <span class="cb-nav-spacer"></span>
@@ -816,6 +852,36 @@
             <div class="cb-placeholder">
                 <strong>Workspace</strong>
                 <span>6-project workspace lands in Step 5 of plans/controlboard.md.</span>
+            </div>
+        </div>
+
+        <!-- Page 4: MWIDE embed (Step 9) -->
+        <div class="cb-page" id="cb-page-mwide" role="region" aria-labelledby="cb-tab-mwide">
+            <div class="mwide-frame-wrap" id="mwide-frame-wrap">
+                <div class="mwide-toolbar">
+                    <strong>MWIDE</strong>
+                    <span style="opacity:0.6; font-size:0.78rem;">mobile-web-IDE · port 10602</span>
+                    <span class="spacer" style="flex:1"></span>
+                    <span id="mwide-status" style="font-size:0.75rem;">Checking…</span>
+                    <button class="btn btn-sm" id="mwide-reload-btn" title="Reload iframe">↻</button>
+                    <a class="btn btn-sm" href="http://localhost:10602/" target="_blank" rel="noopener">Open standalone ↗</a>
+                </div>
+                <div class="mwide-frame-container">
+                    <iframe
+                        id="cb-mwide-iframe"
+                        title="MWIDE — Mobile Web IDE"
+                        src="about:blank"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+                        style="flex:1; width:100%; height:100%; border:none; background:#0d1117;">
+                    </iframe>
+                    <div class="mwide-fallback" id="mwide-fallback">
+                        <h2>MWIDE is not reachable on port 10602</h2>
+                        <p>Start MWIDE locally and click <strong>↻</strong> to retry.</p>
+                        <pre>cd /Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE
+PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
+                        <p style="opacity:0.7; font-size:0.85rem;">Until MWIDE's <code>server.ts:26</code> default is bumped to 10602, you can also pin the port with the <code>PORT</code> environment variable on launch. The full migration steps live at <code>control-center/docs/mwide-port-migration.md</code>.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2277,6 +2343,7 @@
             governance: $('cb-page-governance'),
             terminals:  $('cb-page-terminals'),
             workspace:  $('cb-page-workspace'),
+            mwide:      $('cb-page-mwide'),
             health:     $('cb-page-health'),
             embed:      $('cb-page-embed'),
         };
@@ -2293,6 +2360,7 @@
             }
             if (name === 'governance') refreshGovernance();
             if (name === 'health') refreshHealth();
+            if (name === 'mwide') refreshMwide();
         }
         navTabs.forEach(t => t.addEventListener('click', () => switchPage(t.dataset.cbPage)));
 
@@ -2633,6 +2701,44 @@
             });
         });
         $('health-rescan-btn').addEventListener('click', () => refreshHealth(true));
+
+        // ---- MWIDE iframe (Step 9) ----
+        const MWIDE_URL = 'http://localhost:10602/';
+        async function probeMwide() {
+            // We can't read across origins, but we can check whether the port
+            // accepts a request via a no-cors fetch — opaque success means up.
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 1500);
+                await fetch(MWIDE_URL, { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal });
+                clearTimeout(timer);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+        async function refreshMwide() {
+            const status = $('mwide-status');
+            const fallback = $('mwide-fallback');
+            const iframe = $('cb-mwide-iframe');
+            status.className = 'checking';
+            status.textContent = 'Checking…';
+            const up = await probeMwide();
+            if (up) {
+                status.className = 'up';
+                status.textContent = '● up';
+                fallback.classList.remove('visible');
+                if (iframe.getAttribute('src') !== MWIDE_URL) {
+                    iframe.setAttribute('src', MWIDE_URL);
+                }
+            } else {
+                status.className = 'down';
+                status.textContent = '● down';
+                fallback.classList.add('visible');
+                iframe.setAttribute('src', 'about:blank');
+            }
+        }
+        $('mwide-reload-btn').addEventListener('click', refreshMwide);
     })();
     </script>
 </body>
