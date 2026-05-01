@@ -650,7 +650,7 @@
             <button class="cb-nav-tab active" data-cb-page="governance" id="cb-tab-governance">Governance</button>
             <button class="cb-nav-tab" data-cb-page="terminals" id="cb-tab-terminals">Terminals</button>
             <button class="cb-nav-tab" data-cb-page="workspace" id="cb-tab-workspace">Workspace</button>
-            <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">Embed</button>
+            <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">Infrastructure</button>
             <span class="cb-nav-spacer"></span>
             <span class="cb-nav-meta" id="cb-nav-meta">
                 <span><span class="dot" id="cb-canonical-dot"></span><span id="cb-canonical-text">.supercache: …</span></span>
@@ -728,12 +728,16 @@
             </div>
         </div>
 
-        <!-- Page 4: Embed (Step 13 placeholder) -->
+        <!-- Page 4: Embed — Infrastructure Cartography (Step 13) -->
         <div class="cb-page" id="cb-page-embed" role="region" aria-labelledby="cb-tab-embed">
-            <div class="cb-placeholder">
-                <strong>Embed</strong>
-                <span>MWIDE / infrastructure-map / mac-cleanup-report embeds land in Step 13.</span>
-            </div>
+            <iframe
+                id="cb-infra-iframe"
+                title="Legacy AI Infrastructure Map"
+                src="/static/infrastructure-map.html"
+                style="flex:1; width:100%; height:100%; border:none; background:#0c0c0e;"
+                loading="lazy"
+                referrerpolicy="no-referrer">
+            </iframe>
         </div>
     </div>
 

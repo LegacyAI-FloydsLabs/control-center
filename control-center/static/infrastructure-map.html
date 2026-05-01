@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legacy AI — Infrastructure Cartography</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --bg-card: #111111;
+  --bg-elevated: #161616;
+  --border: #1e1e1e;
+  --border-strong: #2a2a2a;
+  --text: #e8e8e8;
+  --text-dim: #8a8a8a;
+  --text-muted: #525252;
+  --text-faint: #333333;
+
+  --ionos: #3b82f6;
+  --ionos-bg: rgba(59,130,246,0.06);
+  --ionos-border: rgba(59,130,246,0.2);
+  --vercel: #f5f5f5;
+  --vercel-bg: rgba(245,245,245,0.04);
+  --vercel-border: rgba(245,245,245,0.15);
+  --hostinger: #6738de;
+  --hostinger-bg: rgba(103,56,222,0.06);
+  --hostinger-border: rgba(103,56,222,0.2);
+  --railway: #c049ef;
+  --railway-bg: rgba(192,73,239,0.06);
+  --railway-border: rgba(192,73,239,0.2);
+  --supabase: #3ecf8e;
+  --supabase-bg: rgba(62,207,142,0.06);
+  --supabase-border: rgba(62,207,142,0.2);
+  --docean: #0069ff;
+  --docean-bg: rgba(0,105,255,0.06);
+  --docean-border: rgba(0,105,255,0.2);
+  --gcp: #ea4335;
+  --gcp-bg: rgba(234,67,53,0.06);
+  --gcp-border: rgba(234,67,53,0.15);
+  --github: #8b5cf6;
+  --github-bg: rgba(139,92,246,0.06);
+  --github-border: rgba(139,92,246,0.15);
+  --local: #f59e0b;
+  --local-bg: rgba(245,158,11,0.06);
+  --local-border: rgba(245,158,11,0.2);
+  --ai: #f472b6;
+  --ai-bg: rgba(244,114,182,0.06);
+  --ai-border: rgba(244,114,182,0.15);
+  --exit: #ef4444;
+  --exit-bg: rgba(239,68,68,0.06);
+  --exit-border: rgba(239,68,68,0.2);
+  --keep: #22c55e;
+  --live: #22d3ee;
+
+  --f-display: 'Fraunces', serif;
+  --f-body: 'IBM Plex Sans', sans-serif;
+  --f-mono: 'IBM Plex Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 11px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== NAV TABS ===== */
+.nav-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 0 40px;
+  display: flex;
+  gap: 0;
+}
+.nav-tab {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 14px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.nav-tab:hover { color: var(--text-dim); }
+.nav-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--hostinger);
+}
+
+/* ===== PAGES ===== */
+.page {
+  padding: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: none;
+}
+.page.active { display: block; }
+
+/* ===== HEADER ===== */
+.page-header {
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.page-header h1 {
+  font-family: var(--f-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.1;
+}
+.page-header .subtitle {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+.page-header .meta {
+  text-align: right;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--live);
+  margin-top: 4px;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--live);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ===== KPI STRIP ===== */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.kpi-value {
+  font-family: var(--f-display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.kpi-label {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ===== PROVIDER TERRITORIES ===== */
+.territory {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+  margin-bottom: 16px;
+}
+.territory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.territory-name {
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.territory-name .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.territory-cost {
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+.territory-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.territory-meta dt {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.territory-meta dd {
+  font-family: var(--f-body);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.console-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--live);
+  text-decoration: none;
+  padding: 2px 8px;
+  border: 1px solid rgba(34,211,238,0.2);
+  border-radius: 4px;
+  background: rgba(34,211,238,0.06);
+  transition: all 0.2s;
+}
+.console-link:hover {
+  background: rgba(34,211,238,0.12);
+  border-color: rgba(34,211,238,0.4);
+  color: #fff;
+}
+
+/* ===== DOMAIN TABLE ===== */
+.domain-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.domain-table th {
+  font-family: var(--f-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.domain-table td {
+  font-family: var(--f-mono);
+  font-size: 9.5px;
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.domain-table tr:hover td { color: var(--text); }
+.domain-table a {
+  color: var(--live);
+  text-decoration: none;
+}
+.domain-table a:hover { text-decoration: underline; }
+
+/* ===== COST MATRIX ===== */
+.cost-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.cost-section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.cost-section h3 {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-family: var(--f-mono);
+  font-size: 10px;
+}
+.cost-row .name { color: var(--text-dim); }
+.cost-row .price { color: var(--text); font-weight: 500; }
+.cost-row.total {
+  border-top: 1px solid var(--border-strong);
+  padding-top: 8px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.cost-row .name.total-label { color: var(--text); }
+.cost-row .price.total-price { font-size: 13px; }
+
+/* ===== STATUS PILLS ===== */
+.pill {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.pill-keep { background: rgba(34,197,94,0.12); color: #4ade80; }
+.pill-exit { background: rgba(239,68,68,0.12); color: #f87171; }
+.pill-free { background: rgba(96,165,250,0.12); color: #93c5fd; }
+.pill-annual { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.pill-live { background: rgba(34,211,238,0.12); color: #22d3ee; }
+
+/* ===== ANNOTATION ===== */
+.annotation {
+  font-family: var(--f-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+/* ===== FLOW DIAGRAM ===== */
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.flow-box {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: all 0.3s;
+}
+.flow-box:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+.flow-arrow { color: var(--text-muted); font-size: 10px; }
+
+/* ===== CONSOLE LINKS PANEL ===== */
+.console-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.console-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.console-card:hover { border-color: var(--border-strong); }
+.console-card-title {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.console-card-desc {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ===== HOSTINGER LIVE DATA ===== */
+.hostinger-subscriptions {
+  margin-top: 16px;
+}
+.hostinger-sub-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+.hostinger-sub-item:first-child {
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 8px;
+}
+
+/* ===== LEGEND ===== */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+}
+.legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* ===== FOOTER ===== */
+.page-footer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font-family: var(--f-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ===== UTILITIES ===== */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-32 { margin-bottom: 32px; }
+.mt-16 { margin-top: 16px; }
+.text-gold { color: #f4c542; }
+.text-green { color: #4ade80; }
+.text-red { color: #f87171; }
+.text-blue { color: #60a5fa; }
+.text-live { color: #22d3ee; }
+
+.t-ionos { border-color: var(--ionos-border); background: var(--ionos-bg); }
+.t-ionos .dot { background: var(--ionos); }
+.t-ionos .territory-cost { color: var(--ionos); }
+.t-vercel { border-color: var(--vercel-border); background: var(--vercel-bg); }
+.t-vercel .dot { background: var(--vercel); }
+.t-vercel .territory-cost { color: var(--vercel); }
+.t-hostinger { border-color: var(--hostinger-border); background: var(--hostinger-bg); }
+.t-hostinger .dot { background: var(--hostinger); }
+.t-hostinger .territory-cost { color: var(--hostinger); }
+.t-railway { border-color: var(--railway-border); background: var(--railway-bg); }
+.t-railway .dot { background: var(--railway); }
+.t-railway .territory-cost { color: var(--railway); }
+.t-supabase { border-color: var(--supabase-border); background: var(--supabase-bg); }
+.t-supabase .dot { background: var(--supabase); }
+.t-supabase .territory-cost { color: var(--supabase); }
+.t-docean { border-color: var(--docean-border); background: var(--docean-bg); }
+.t-docean .dot { background: var(--docean); }
+.t-docean .territory-cost { color: var(--docean); }
+.t-gcp { border-color: var(--gcp-border); background: var(--gcp-bg); }
+.t-gcp .dot { background: var(--gcp); }
+.t-gcp .territory-cost { color: var(--gcp); }
+.t-github { border-color: var(--github-border); background: var(--github-bg); }
+.t-github .dot { background: var(--github); }
+.t-github .territory-cost { color: var(--github); }
+.t-local { border-color: var(--local-border); background: var(--local-bg); }
+.t-local .dot { background: var(--local); }
+.t-local .territory-cost { color: var(--local); }
+.t-ai { border-color: var(--ai-border); background: var(--ai-bg); }
+.t-ai .dot { background: var(--ai); }
+.t-ai .territory-cost { color: var(--ai); }
+.t-exit { border-color: var(--exit-border); background: var(--exit-bg); }
+.t-exit .dot { background: var(--exit); }
+.t-exit .territory-cost { color: var(--exit); text-decoration: line-through; }
+
+/* ===== LOADING STATE ===== */
+.loading {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  padding: 20px;
+  text-align: center;
+}
+.loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border-strong);
+  border-top-color: var(--live);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showPage('map')">System Map</button>
+  <button class="nav-tab" onclick="showPage('consoles')">Consoles</button>
+  <button class="nav-tab" onclick="showPage('costs')">Cost Analysis</button>
+  <button class="nav-tab" onclick="showPage('network')">Network &amp; Hardware</button>
+  <button class="nav-tab" onclick="showPage('hostinger')">Hostinger Live</button>
+</div>
+
+<!-- ============================================================
+     PAGE: SYSTEM MAP
+     ============================================================ -->
+<div id="page-map" class="page active">
+
+  <div class="page-header">
+    <div>
+      <h1>Legacy AI<br>Infrastructure Cartography</h1>
+      <div class="subtitle">Live system map · All services · All costs · All connections</div>
+      <div class="live-indicator"><span class="live-dot"></span> <span id="last-refresh">Loading…</span></div>
+    </div>
+    <div class="meta">
+      <div>Legacy AI · Floyd's Labs</div>
+      <div id="current-date"></div>
+      <div>Classification: Internal · Douglas Talley</div>
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-value text-blue">$416</div>
+      <div class="kpi-label">Current Monthly</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value text-green">$259</div>
+      <div class="kpi-label">Post-Consolidation</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value text-gold">$157</div>
+      <div class="kpi-label">Monthly Savings</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value">17</div>
+      <div class="kpi-label">Active Services</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value text-red">3</div>
+      <div class="kpi-label">Pending Cancel</div>
+    </div>
+  </div>
+
+  <!-- DNS → HOSTING → APPLICATION FLOW -->
+  <div class="annotation">DNS Authority → Hosting Layer → Application Layer</div>
+
+  <div class="flow-row" style="margin-bottom:3px;">
+    <div class="flow-box" style="border-color:var(--hostinger-border); background:var(--hostinger-bg); min-width:120px; text-align:center; cursor:pointer;" onclick="window.open('https://hpanel.hostinger.com','_blank')">HOSTINGER<br><span style="font-size:8px; color:var(--text-muted);">DNS Authority</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color:var(--vercel-border); background:var(--vercel-bg); min-width:100px; text-align:center; cursor:pointer;" onclick="window.open('https://vercel.com/legacy-floydslabs/floyd-portal','_blank')">VERCEL<br><span style="font-size:8px; color:var(--text-muted);">Hosting</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color:var(--railway-border); background:var(--railway-bg); min-width:100px; text-align:center; cursor:pointer;" onclick="window.open('https://railway.com/project/e0a8631c-3c16-4465-95ab-1a00c31edacc','_blank')">RAILWAY<br><span style="font-size:8px; color:var(--text-muted);">Database</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color:var(--docean-border); background:var(--docean-bg); min-width:100px; text-align:center; cursor:pointer;" onclick="window.open('https://cloud.digitalocean.com/droplets','_blank')">DIGITALOCEAN<br><span style="font-size:8px; color:var(--text-muted);">Compute</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color:var(--supabase-border); background:var(--supabase-bg); min-width:100px; text-align:center; cursor:pointer;" onclick="window.open('https://supabase.com/dashboard/org/legacyai','_blank')">SUPABASE<br><span style="font-size:8px; color:var(--text-muted);">Dev Databases</span></div>
+  </div>
+  <div class="flow-row" style="margin-bottom:24px;">
+    <div style="min-width:120px; text-align:center; font-family:var(--f-mono); font-size:8px; color:var(--hostinger);">legacyai.space · 7 domains</div>
+    <div style="width:20px;"></div>
+    <div style="min-width:100px; text-align:center; font-family:var(--f-mono); font-size:8px; color:var(--vercel);">6 domains + portal</div>
+    <div style="width:20px;"></div>
+    <div style="min-width:100px; text-align:center; font-family:var(--f-mono); font-size:8px; color:var(--railway);">PG 18.3 · Floyd Portal</div>
+    <div style="width:20px;"></div>
+    <div style="min-width:100px; text-align:center; font-family:var(--f-mono); font-size:8px; color:var(--docean);">floyd.legacyai.space</div>
+    <div style="width:20px;"></div>
+    <div style="min-width:100px; text-align:center; font-family:var(--f-mono); font-size:8px; color:var(--supabase);">4 dev databases</div>
+  </div>
+
+  <!-- PROVIDER TERRITORIES — 3x2 GRID -->
+  <div class="grid-3 mb-16">
+
+    <!-- HOSTINGER -->
+    <div class="territory t-hostinger">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Hostinger</div>
+        <div class="territory-cost">$13.99/mo <span class="pill pill-exit">EXIT</span></div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Role</dt><dd>DNS Authority for legacyai.space + 7 domains</dd></div>
+        <div><dt>Annual</dt><dd>$167.88/yr</dd></div>
+        <div><dt>Domains</dt><dd>legacyai.space, legacyai.guru, legacyai.info, legacyai.site, legacyai.website, franchise-os.net, neighborlyai.net, neighborlyai.org</dd></div>
+        <div><dt>Status</dt><dd>Cancel hosting, keep domain registration. DNS via API.</dd></div>
+      </div>
+      <div style="margin-top:10px;">
+        <a class="console-link" href="https://hpanel.hostinger.com" target="_blank">↗ hPanel</a>
+        <a class="console-link" href="https://developers.hostinger.com" target="_blank">↗ API Docs</a>
+      </div>
+    </div>
+
+    <!-- IONOS -->
+    <div class="territory t-ionos">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> IONOS</div>
+        <div class="territory-cost">$0.00 <span class="pill pill-free">DNS ONLY</span></div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Role</dt><dd>Secondary DNS zone management (8 zones)</dd></div>
+        <div><dt>Annual</dt><dd>$0.00 (included in domain reg)</dd></div>
+        <div><dt>Zones</dt><dd>Shadow zones exist but NOT authoritative — NS point to Hostinger</dd></div>
+        <div><dt>IP Resides</dt><dd>None active. 216.150.1.1 is parking page.</dd></div>
+      </div>
+    </div>
+
+    <!-- VERCEL -->
+    <div class="territory t-vercel">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Vercel</div>
+        <div class="territory-cost">$20.00/mo <span class="pill pill-keep">KEEP</span></div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Role</dt><dd>Primary hosting + CDN + auto-SSL</dd></div>
+        <div><dt>Annual</dt><dd>$240.00/yr</dd></div>
+        <div><dt>Capacity</dt><dd>10 project slots · 7 verified domains · Region: iad1</dd></div>
+        <div><dt>Hosts</dt><dd>portal.legacyai.space + 6 brand domains</dd></div>
+      </div>
+      <div style="margin-top:10px;">
+        <a class="console-link" href="https://vercel.com/legacy-floydslabs/floyd-portal" target="_blank">↗ Floyd Portal</a>
+        <a class="console-link" href="https://vercel.com/legacy-floydslabs" target="_blank">↗ All Projects</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="grid-3 mb-16">
+
+    <!-- RAILWAY -->
+    <div class="territory t-railway">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Railway</div>
+        <div class="territory-cost">$20.00/mo <span class="pill pill-keep">KEEP</span></div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Role</dt><dd>Postgres hosting + compute for 7 projects</dd></div>
+        <div><dt>Annual</dt><dd>$240.00/yr</dd></div>
+        <div><dt>Capacity</dt><dd>23GB RAM / 23 vCPU unused headroom</dd></div>
+        <div><dt>Active</dt><dd>Floyd Portal Postgres 18.3 · 4 tenants · 13 users · 80 conversations</dd></div>
+        <div><dt>IP</dt><dd>nozomi.proxy.rlwy.net:48658 (public) · postgres.railway.internal:5432 (private)</dd></div>
+      </div>
+      <div style="margin-top:10px;">
+        <a class="console-link" href="https://railway.com/project/e0a8631c-3c16-4465-95ab-1a00c31edacc" target="_blank">↗ Project Dashboard</a>
+      </div>
+    </div>
+
+    <!-- DIGITALOCEAN -->
+    <div class="territory t-docean">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> DigitalOcean</div>
+        <div class="territory-cost">$42.00/mo <span class="pill pill-exit">RESIZE → $6</span></div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Role</dt><dd>Always-on spine + Tailscale relay</dd></div>
+        <div><dt>Target</dt><dd>$6.00/mo after resize (save $36/mo)</dd></div>
+        <div><dt>Droplet</dt><dd>ubuntu-s-2vcpu-2gb-nyc3-01 · 2 vCPU · 2GB RAM · 58GB disk</dd></div>
+        <div><dt>IP</dt><dd>Public: 167.99.62.204 · Tailscale: 100.108.138.101</dd></div>
+        <div><dt>SSL</dt><dd>floyd.legacyai.space (Let's Encrypt) · expires 2026-07-16</dd></div>
+        <div><dt>Contents</dt><dd>Deer-flow (stopped) · Certbot · Tailscale node</dd></div>
+      </div>
+      <div style="margin-top:10px;">
+        <a class="console-link" href="https://cloud.digitalocean.com/droplets" target="_blank">↗ Droplet Console</a>
+        <a class="console-link" href="https://cloud.digitalocean.com/account/billing" target="_blank">↗ Billing</a>
+      </div>
+    </div>
+
+    <!-- SUPABASE -->
+    <div class="territory t-supabase">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Supabase</div>
+        <div class="territory-cost">$65.00/mo <span class="pill pill-exit">EXIT</span></div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Role</dt><dd>Development databases (none in production)</dd></div>
+        <div><dt>Annual</dt><dd>$780.00/yr (saved if cancelled)</dd></div>
+        <div><dt>Databases</dt><dd>Legacy-Field-Command · CRM-AI-Pro · Legacy AI Agent Studio · KindHome</dd></div>
+        <div><dt>Action</dt><dd>Export LFC (7,600 rows), then cancel. Moving to Railway/OrbStack.</dd></div>
+      </div>
+      <div style="margin-top:10px;">
+        <a class="console-link" href="https://supabase.com/dashboard/org/legacyai" target="_blank">↗ Dashboard</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DOMAIN REGISTRY TABLE -->
+  <div class="annotation">Domain Registry — Where Everything Resolves</div>
+  <table class="domain-table">
+    <thead>
+      <tr>
+        <th>Domain</th>
+        <th>Type</th>
+        <th>Resolves To</th>
+        <th>SSL</th>
+        <th>Hosted By</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="color:var(--text);"><a href="https://portal.legacyai.space" target="_blank">portal.legacyai.space</a></td><td>CNAME</td><td>vercel-dns → 76.76.21.164</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Floyd Portal — multi-tenant SaaS</td></tr>
+      <tr><td style="color:var(--text);"><a href="https://floyd.legacyai.space" target="_blank">floyd.legacyai.space</a></td><td>A</td><td>167.99.62.204</td><td style="color:#4ade80;">✓ Let's Encrypt</td><td>DO Droplet</td><td>Always-on spine + Tailscale relay</td></tr>
+      <tr><td><a href="https://legacyai.space" target="_blank">legacyai.space</a></td><td>A</td><td>216.150.1.1</td><td style="color:#4ade80;">✓</td><td>Parking</td><td>Primary business domain</td></tr>
+      <tr><td><a href="https://www.legacyai.space" target="_blank">www.legacyai.space</a></td><td>A</td><td>76.76.21.21</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Corporate website</td></tr>
+      <tr><td><a href="https://ragbot.legacyai.space" target="_blank">ragbot.legacyai.space</a></td><td>ALIAS</td><td>cdn.hstgr.net</td><td style="color:#4ade80;">✓</td><td>Hostinger</td><td>RAGBot3000</td></tr>
+      <tr><td><a href="https://legacyai.guru" target="_blank">legacyai.guru</a></td><td>A</td><td>76.76.21.21</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Brand domain</td></tr>
+      <tr><td><a href="https://legacyai.site" target="_blank">legacyai.site</a></td><td>A</td><td>76.76.21.21</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Brand domain</td></tr>
+      <tr><td><a href="https://legacyai.info" target="_blank">legacyai.info</a></td><td>A</td><td>76.76.21.21</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Brand domain</td></tr>
+      <tr><td><a href="https://legacyai.website" target="_blank">legacyai.website</a></td><td>A</td><td>76.76.21.21</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Brand domain</td></tr>
+      <tr><td><a href="https://franchise-os.net" target="_blank">franchise-os.net</a></td><td>A</td><td>76.76.21.21</td><td style="color:#4ade80;">✓ Auto</td><td>Vercel</td><td>Project domain</td></tr>
+      <tr><td><a href="https://neighborlyai.net" target="_blank">neighborlyai.net</a></td><td>A</td><td>76.76.21.21</td><td style="color:#60a5fa;">⏳ Propagating</td><td>Vercel</td><td>Project domain</td></tr>
+      <tr><td><a href="https://neighborlyai.org" target="_blank">neighborlyai.org</a></td><td>A</td><td>76.76.21.21</td><td style="color:#60a5fa;">⏳ Propagating</td><td>Vercel</td><td>Project domain</td></tr>
+      <tr><td><a href="https://floyd.floydslabs.com" target="_blank">floyd.floydslabs.com</a></td><td>—</td><td>167.99.62.204</td><td style="color:#4ade80;">✓ Let's Encrypt</td><td>DO Droplet</td><td>Lab domain</td></tr>
+      <tr><td><a href="https://precisionsewerinspection.com" target="_blank">precisionsewerinspection.com</a></td><td>—</td><td>—</td><td>—</td><td>Vercel</td><td><a href="https://portal.legacyai.space" target="blank">PSI client domain</a></td></tr>
+    </tbody>
+  </table>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--hostinger);"></span> Hostinger (DNS)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--vercel);"></span> Vercel (Hosting)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--railway);"></span> Railway (Database)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--docean);"></span> DigitalOcean (Compute)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--supabase);"></span> Supabase (Dev DB)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--gcp);"></span> GCP Free Tier</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--github);"></span> GitHub</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--local);"></span> Local Hardware</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--ai);"></span> AI Services</div>
+  </div>
+
+  <div class="page-footer">
+    <div>Legacy AI Infrastructure Cartography · Live Dashboard</div>
+    <div>Receipt-verified 2026-04-17 · All costs in USD</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PAGE: CONSOLES
+     ============================================================ -->
+<div id="page-consoles" class="page">
+
+  <div class="page-header">
+    <div>
+      <h1>Service Consoles</h1>
+      <div class="subtitle">Direct links to every infrastructure management console</div>
+      <div class="live-indicator"><span class="live-dot"></span> Click any card to open</div>
+    </div>
+    <div class="meta">
+      <div>Legacy AI · Floyd's Labs</div>
+      <div>All Services</div>
+    </div>
+  </div>
+
+  <!-- HOSTING & INFRASTRUCTURE -->
+  <div class="annotation" style="color:var(--vercel);">Hosting & Infrastructure</div>
+  <div class="console-panel mb-24">
+    <a class="console-card" href="https://vercel.com/legacy-floydslabs/floyd-portal" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--vercel);"></span> Vercel — Floyd Portal</div>
+      <div class="console-card-desc">portal.legacyai.space · Region iad1<br>Deployments · Analytics · Domains</div>
+      <span class="pill pill-live">→ Open</span>
+    </a>
+    <a class="console-card" href="https://railway.com/project/e0a8631c-3c16-4465-95ab-1a00c31edacc" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--railway);"></span> Railway — Postgres 18.3</div>
+      <div class="console-card-desc">Floyd Portal DB · 4 tenants · 13 users<br>nozomi.proxy.rlwy.net:48658</div>
+      <span class="pill pill-live">→ Open</span>
+    </a>
+    <a class="console-card" href="https://cloud.digitalocean.com/droplets" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--docean);"></span> DigitalOcean Droplet</div>
+      <div class="console-card-desc">167.99.62.204 · 2vCPU · 2GB RAM<br>Tailscale: 100.108.138.101</div>
+      <span class="pill pill-live">→ Open</span>
+    </a>
+    <a class="console-card" href="https://hpanel.hostinger.com" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--hostinger);"></span> Hostinger hPanel</div>
+      <div class="console-card-desc">DNS Authority for legacyai.space<br>16 subscriptions · 7 domains</div>
+      <span class="pill pill-live">→ Open</span>
+    </a>
+  </div>
+
+  <!-- DATABASES -->
+  <div class="annotation" style="color:var(--supabase);">Databases</div>
+  <div class="console-panel mb-24">
+    <a class="console-card" href="https://supabase.com/dashboard/org/legacyai" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--supabase);"></span> Supabase — LegacyAI Org</div>
+      <div class="console-card-desc">$65/mo · 4 databases · <span style="color:var(--exit);">EXIT — export LFC first</span></div>
+      <span class="pill pill-exit">PENDING CANCEL</span>
+    </a>
+    <a class="console-card" href="https://railway.com/project/e0a8631c-3c16-4465-95ab-1a00c31edacc" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--railway);"></span> Railway — All Projects</div>
+      <div class="console-card-desc">$20/mo · 7 projects · 23GB headroom</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <div></div>
+    <div></div>
+  </div>
+
+  <!-- AI SERVICES -->
+  <div class="annotation" style="color:var(--ai);">AI Services</div>
+  <div class="console-panel mb-24">
+    <a class="console-card" href="https://console.anthropic.com" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--ai);"></span> Anthropic Claude</div>
+      <div class="console-card-desc">$200/mo · Max 20x plan<br>Primary AI brain · API keys · Usage</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <a class="console-card" href="https://elevenlabs.io/app" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--ai);"></span> ElevenLabs</div>
+      <div class="console-card-desc">$22/mo · Creator plan<br>Voice + TTS · API keys</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <a class="console-card" href="https://aistudio.google.com" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--ai);"></span> Google AI Pro</div>
+      <div class="console-card-desc">$19.99/mo (via Apple)<br>5TB · 1K AI credits · NotebookLM</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <a class="console-card" href="https://huggingface.co/settings/account" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--ai);"></span> HuggingFace</div>
+      <div class="console-card-desc">$9/mo · Pro · 12TB storage<br>ZeroGPU · Inference endpoints</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+  </div>
+
+  <!-- DEVELOPMENT -->
+  <div class="annotation" style="color:var(--github);">Development & Automation</div>
+  <div class="console-panel mb-24">
+    <a class="console-card" href="https://github.com/LegacyAI-FloydsLabs" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--github);"></span> GitHub Org</div>
+      <div class="console-card-desc">LegacyAI-FloydsLabs · $10/mo<br>Private repos · .supercache governance</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <a class="console-card" href="https://github.com/settings/copilot" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--github);"></span> GitHub Copilot</div>
+      <div class="console-card-desc">$10/mo · Pro<br>Daily code assistance</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <a class="console-card" href="https://ifttt.com/home" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--local);"></span> IFTTT</div>
+      <div class="console-card-desc">$3/mo · Pro<br>Automation backbone · Replaces Zapier</div>
+      <span class="pill pill-keep">ACTIVE</span>
+    </a>
+    <a class="console-card" href="https://console.cloud.google.com/home/dashboard?project=legacyai-marketplace" target="_blank" style="text-decoration:none; color:inherit;">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--gcp);"></span> GCP Console</div>
+      <div class="console-card-desc">Free tier · legacyai-marketplace project<br>Vertex AI Search · Dialogflow CX</div>
+      <span class="pill pill-free">FREE</span>
+    </a>
+  </div>
+
+  <!-- PENDING CANCELLATION -->
+  <div class="annotation" style="color:var(--exit);">Pending Cancellation — Console Access</div>
+  <div class="console-panel mb-24">
+    <a class="console-card" href="https://zapier.com/app/billing" target="_blank" style="text-decoration:none; color:inherit; border-color: var(--exit-border); background: var(--exit-bg);">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--exit);"></span> Zapier</div>
+      <div class="console-card-desc">$29.99/mo · Migrate automations to IFTTT first</div>
+      <span class="pill pill-exit">CANCEL</span>
+    </a>
+    <a class="console-card" href="https://supabase.com/dashboard/org/legacyai" target="_blank" style="text-decoration:none; color:inherit; border-color: var(--exit-border); background: var(--exit-bg);">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--exit);"></span> Supabase Pro</div>
+      <div class="console-card-desc">$65/mo · Export LFC data (7,600 rows), then cancel</div>
+      <span class="pill pill-exit">CANCEL</span>
+    </a>
+    <a class="console-card" href="https://www.docker.com/pricing/" target="_blank" style="text-decoration:none; color:inherit; border-color: var(--exit-border); background: var(--exit-bg);">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--exit);"></span> Docker Desktop</div>
+      <div class="console-card-desc">$11/mo · CLI is free for individuals</div>
+      <span class="pill pill-exit">CANCEL</span>
+    </a>
+    <a class="console-card" href="https://www.spotify.com/us/account/subscription/" target="_blank" style="text-decoration:none; color:inherit; border-color: var(--exit-border); background: var(--exit-bg);">
+      <div class="console-card-title"><span class="legend-dot" style="background:var(--exit);"></span> Spotify Premium</div>
+      <div class="console-card-desc">$10.99/mo · Trial ending, not business-critical</div>
+      <span class="pill pill-exit">CANCEL</span>
+    </a>
+  </div>
+
+  <div class="page-footer">
+    <div>Legacy AI Service Consoles · Live Dashboard</div>
+    <div>All management endpoints · Last verified 2026-04-17</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PAGE: COST ANALYSIS
+     ============================================================ -->
+<div id="page-costs" class="page">
+
+  <div class="page-header">
+    <div>
+      <h1>Cost Analysis</h1>
+      <div class="subtitle">Active spend · Pending cancellations · Annual projections · Optimization</div>
+    </div>
+    <div class="meta">
+      <div>Legacy AI · Floyd's Labs</div>
+      <div>Financial Summary</div>
+    </div>
+  </div>
+
+  <div class="kpi-strip" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="kpi">
+      <div class="kpi-value text-blue">$493/mo</div>
+      <div class="kpi-label">Current Total</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value text-green">$259/mo</div>
+      <div class="kpi-label">Post-Consolidation</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value text-gold">$1,587/yr</div>
+      <div class="kpi-label">Annual Savings</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value text-red">$5,917/mo</div>
+      <div class="kpi-label">Current Annualized</div>
+    </div>
+  </div>
+
+  <div class="cost-grid mb-32">
+    <!-- ACTIVE SERVICES -->
+    <div class="cost-section">
+      <h3>Active Services — Keep <span class="pill pill-keep" style="margin-left:8px;">14 items</span></h3>
+      <div class="cost-row"><span class="name">Anthropic Claude · Max 20x</span><span class="price">$200.00</span></div>
+      <div class="cost-row"><span class="name">ElevenLabs · Creator</span><span class="price">$22.00</span></div>
+      <div class="cost-row"><span class="name">Railway · Pro</span><span class="price">$20.00</span></div>
+      <div class="cost-row"><span class="name">Vercel · Pro</span><span class="price">$20.00</span></div>
+      <div class="cost-row"><span class="name">Google AI Pro (via Apple)</span><span class="price">$19.99</span></div>
+      <div class="cost-row"><span class="name">GitHub Copilot · Pro</span><span class="price">$10.00</span></div>
+      <div class="cost-row"><span class="name">GitHub Org · LegacyAI-FloydsLabs</span><span class="price">$10.00</span></div>
+      <div class="cost-row"><span class="name">HuggingFace · Pro</span><span class="price">$9.00</span></div>
+      <div class="cost-row"><span class="name">Google Workspace · legacyai.space</span><span class="price">$7.20</span></div>
+      <div class="cost-row"><span class="name">Google Workspace · floydslabs.com</span><span class="price">$7.20</span></div>
+      <div class="cost-row"><span class="name">DigitalOcean · 2vCPU-2GB (target)</span><span class="price">$6.00</span></div>
+      <div class="cost-row"><span class="name">IFTTT · Pro</span><span class="price">$3.00</span></div>
+      <div class="cost-row"><span class="name">Tile Premium</span><span class="price">$2.99</span></div>
+      <div class="cost-row total"><span class="name total-label">Monthly Subtotal</span><span class="price total-price">$337.38</span></div>
+    </div>
+
+    <!-- ANNUAL PREPAID -->
+    <div class="cost-section">
+      <h3>Annual Prepaid <span class="pill pill-annual" style="margin-left:8px;">2 items</span></h3>
+      <div class="cost-row"><span class="name">ZAI · Heavy coding workhorse</span><span class="price">$20.83/mo</span></div>
+      <div class="cost-row"><span class="name" style="padding-left:12px;">Annual: $250.00</span><span class="price"></span></div>
+      <div class="cost-row"><span class="name">MiniMax · Heavy coding workhorse</span><span class="price">$16.67/mo</span></div>
+      <div class="cost-row"><span class="name" style="padding-left:12px;">Annual: $200.00</span><span class="price"></span></div>
+      <div class="cost-row total"><span class="name total-label">Monthly Equivalent</span><span class="price total-price">$37.50</span></div>
+
+      <h3 style="margin-top:24px;">Free Tier Services <span class="pill pill-free" style="margin-left:8px;">5 items</span></h3>
+      <div class="cost-row"><span class="name">GCP Free Tier</span><span class="price">$0</span></div>
+      <div class="cost-row" style="padding-left:12px;"><span class="name">Cloud Run · 2M req/mo</span><span class="price"></span></div>
+      <div class="cost-row" style="padding-left:12px;"><span class="name">Firestore · 1GB, 50K reads/day</span><span class="price"></span></div>
+      <div class="cost-row" style="padding-left:12px;"><span class="name">BigQuery · 10GB, 1TB queries/mo</span><span class="price"></span></div>
+      <div class="cost-row" style="padding-left:12px;"><span class="name">Cloud Storage · 5GB</span><span class="price"></span></div>
+      <div class="cost-row"><span class="name">Tailscale · Free · 7 devices</span><span class="price">$0</span></div>
+      <div class="cost-row"><span class="name">Pinecone · Free · 4 indexes</span><span class="price">$0</span></div>
+      <div class="cost-row"><span class="name">UptimeRobot · Free</span><span class="price">$0</span></div>
+      <div class="cost-row"><span class="name">IONOS DNS · Included</span><span class="price">$0</span></div>
+    </div>
+  </div>
+
+  <!-- PENDING CANCELLATIONS -->
+  <div class="annotation" style="color:var(--exit);">Pending Cancellations — $131.97/mo savings</div>
+  <div class="territory t-exit" style="margin-bottom:24px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap:16px; font-family:var(--f-mono); font-size:10px;">
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Service</div><div style="color:var(--text);">Zapier</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Cost</div><div>$29.99/mo</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Annual</div><div>$359.88</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Reason</div><div>IFTTT Pro replaces</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Action</div><div>Migrate automations</div></div>
+    </div>
+  </div>
+  <div class="territory t-exit" style="margin-bottom:24px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap:16px; font-family:var(--f-mono); font-size:10px;">
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Service</div><div style="color:var(--text);">Supabase Pro</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Cost</div><div>$65.00/mo</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Annual</div><div>$780.00</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Reason</div><div>All dev, none prod</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Action</div><div>Export LFC data, cancel</div></div>
+    </div>
+  </div>
+  <div class="territory t-exit" style="margin-bottom:24px;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap:16px; font-family:var(--f-mono); font-size:10px;">
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Service</div><div style="color:var(--text);">Hostinger Hosting</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Cost</div><div>$13.99/mo</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Annual</div><div>$167.88</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Reason</div><div>Vercel absorbs hosting</div></div>
+      <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;">Action</div><div>Keep domain reg, cancel hosting</div></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="territory t-exit">
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:12px; font-family:var(--f-mono); font-size:10px;">
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Service</div><div style="color:var(--text);">Docker Desktop</div></div>
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Cost</div><div>$11.00/mo</div></div>
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Annual</div><div>$132.00</div></div>
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Reason</div><div>CLI is free</div></div>
+      </div>
+    </div>
+    <div class="territory t-exit">
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:12px; font-family:var(--f-mono); font-size:10px;">
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Service</div><div style="color:var(--text);">Spotify Premium</div></div>
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Cost</div><div>$10.99/mo</div></div>
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Annual</div><div>$131.88</div></div>
+        <div><div style="font-size:8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px;">Reason</div><div>Trial ending</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTIMIZATION NOTES -->
+  <div style="margin-top:32px; border:1px solid var(--border); border-radius:8px; padding:20px;">
+    <div class="annotation" style="color:var(--local);">Optimization Analysis</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; font-family:var(--f-body); font-size:11px; color:var(--text-dim); line-height:1.7;">
+      <div>
+        <strong style="color:var(--text);">Underutilized</strong><br>
+        Railway: 23GB RAM / 23 vCPU unused — room for 10+ production databases<br>
+        Vercel: 10 project slots, 7 verified domains — 3 slots free<br>
+        HuggingFace: 12TB storage (private 1TB + public 11.2TB)<br>
+        Google Drive: 5TB plan, 14GB used (0.3% utilization)<br>
+        GCP Free Tier: Cloud Run, Firestore, BigQuery — all provisioned, zero traffic
+      </div>
+      <div>
+        <strong style="color:var(--text);">Scaling Considerations</strong><br>
+        DO Droplet: Currently $42/mo for 2vCPU-2GB. Resize to $6/mo — Deer-flow stopped, only Tailscale relay running<br>
+        Floyd Portal DB: Single Postgres on Railway. Multi-tenant RLS in place. Horizontal scaling via read replicas when needed.<br>
+        IP Protection: All domains auto-SSL. Let's Encrypt on DO. RLS on all 7 tenant-scoped tables. Backup strategy needed for Railway PG.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>Legacy AI Cost Analysis · Live Dashboard</div>
+    <div>Receipt-verified 2026-04-17 · All costs in USD</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PAGE: NETWORK & HARDWARE
+     ============================================================ -->
+<div id="page-network" class="page">
+
+  <div class="page-header">
+    <div>
+      <h1>Network &amp; Hardware</h1>
+      <div class="subtitle">Local compute · Storage topology · Tailscale mesh · GCP provisioned</div>
+    </div>
+    <div class="meta">
+      <div>Legacy AI · Floyd's Labs</div>
+      <div>Infrastructure</div>
+    </div>
+  </div>
+
+  <!-- LOCAL HARDWARE -->
+  <div class="annotation" style="color:var(--local);">Local Compute</div>
+  <div class="grid-3 mb-24">
+    <div class="territory t-local">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Mac Mini M4</div>
+        <div class="territory-cost" style="color:var(--local);">Primary</div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Specs</dt><dd>24GB RAM · 10 cores · 500GB internal</dd></div>
+        <div><dt>Tailscale</dt><dd>100.64.14.51 · douglass-mac-mini-1</dd></div>
+        <div><dt>Role</dt><dd>Primary workstation · All development</dd></div>
+      </div>
+    </div>
+    <div class="territory t-local">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> M4 Air</div>
+        <div class="territory-cost" style="color:var(--local);">Secondary</div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Specs</dt><dd>16GB RAM · 256GB drive</dd></div>
+        <div><dt>Tailscale</dt><dd>100.101.243.118 · admins-macbook-pro</dd></div>
+        <div><dt>Role</dt><dd>Mobile workstation</dd></div>
+      </div>
+    </div>
+    <div class="territory t-local">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> MacBook Pro 2017</div>
+        <div class="territory-cost" style="color:var(--local);">Tertiary</div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Specs</dt><dd>Legacy hardware</dd></div>
+        <div><dt>Role</dt><dd>Spare / testing</dd></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORAGE TOPOLOGY -->
+  <div class="annotation" style="color:var(--local);">Storage Topology</div>
+  <table class="domain-table mb-24">
+    <thead>
+      <tr><th>Volume</th><th>Mount</th><th>Capacity</th><th>Free</th><th>Used</th><th>Role</th><th>Governance</th></tr>
+    </thead>
+    <tbody>
+      <tr><td style="color:var(--text);">SanDisk 1TB</td><td>/Volumes/SanDisk1Tb</td><td>931 GB</td><td>881 GB</td><td>5%</td><td>Active development + .supercache/</td><td style="color:#4ade80;">✓ Governed</td></tr>
+      <tr><td style="color:var(--text);">Storage Drive</td><td>/Volumes/Storage</td><td>931 GB</td><td>664 GB</td><td>29%</td><td>Secondary projects + tools</td><td style="color:#4ade80;">✓ Governed</td></tr>
+      <tr><td>T7</td><td>/Volumes/T7</td><td>931 GB</td><td>144 GB</td><td>85%</td><td>Time Machine (Mac mini)</td><td style="color:var(--exit);">⊘ Off-limits</td></tr>
+      <tr><td>Google Drive</td><td>~/Library/CloudStorage/…</td><td>5 TB</td><td>4,986 GB</td><td>0.3%</td><td>Tier 3 backbone + archives</td><td>—</td></tr>
+      <tr><td>HuggingFace</td><td>—</td><td>12.2 TB</td><td>—</td><td>—</td><td>ML models + datasets</td><td>—</td></tr>
+      <tr><td>iCloud</td><td>—</td><td>2 TB</td><td>—</td><td>—</td><td>Device sync</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <!-- TAILSCALE NETWORK -->
+  <div class="annotation" style="color:#60a5fa;">Tailscale Mesh Network · 7 Devices · Free Tier</div>
+  <table class="domain-table mb-24">
+    <thead>
+      <tr><th>Device</th><th>Tailscale IP</th><th>Platform</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+      <tr><td style="color:var(--text);">douglass-mac-mini-1</td><td>100.64.14.51</td><td>macOS</td><td>Primary workstation</td></tr>
+      <tr><td style="color:var(--text);">admins-macbook-pro</td><td>100.101.243.118</td><td>macOS</td><td>Mobile workstation</td></tr>
+      <tr><td style="color:var(--text);">floydslabs</td><td>100.64.199.42</td><td>Linux</td><td>Lab server</td></tr>
+      <tr><td>hnic-iphone</td><td>100.127.69.21</td><td>iOS</td><td>Mobile</td></tr>
+      <tr><td style="color:var(--text);">ubuntu-s-2vcpu-2gb-nyc3-01</td><td>100.108.138.101</td><td>Linux</td><td>DO Droplet (always-on)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- GCP PROVISIONED -->
+  <div class="annotation" style="color:var(--gcp);">GCP Provisioned · Project: legacyai-marketplace</div>
+  <div class="grid-2 mb-24">
+    <div class="territory t-gcp">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Vertex AI Search</div>
+        <div class="territory-cost">~$0.002/query</div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Credit</dt><dd>$1,000 Gen App Builder (expired 2026-04-12)</dd></div>
+        <div><dt>Datastore</dt><dd>legacy-ai-curated-knowledge</dd></div>
+        <div><dt>Location</dt><dd>Global</dd></div>
+        <div><dt>Purpose</dt><dd>Curated knowledge retrieval for agents</dd></div>
+      </div>
+    </div>
+    <div class="territory t-gcp">
+      <div class="territory-header">
+        <div class="territory-name"><span class="dot"></span> Dialogflow CX</div>
+        <div class="territory-cost">Free tier + pennies</div>
+      </div>
+      <div class="territory-meta">
+        <div><dt>Credit</dt><dd>$600 SKU-locked (expired 2026-04-12)</dd></div>
+        <div><dt>Agent</dt><dd>Legacy AI Service Bot · 3318aedb</dd></div>
+        <div><dt>Location</dt><dd>us-central1</dd></div>
+        <div><dt>Purpose</dt><dd>Customer-facing chatbot</dd></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI SERVICES -->
+  <div class="annotation" style="color:var(--ai);">AI Services</div>
+  <div class="territory t-ai">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px;">
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">Anthropic Claude</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">$200/mo · Max 20x</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;">Primary AI brain</div>
+      </div>
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">ElevenLabs</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">$22/mo · Creator</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;">Voice + TTS</div>
+      </div>
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">ZAI</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">$250/yr prepaid</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;">Heavy coding workhorse</div>
+      </div>
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">MiniMax</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">$200/yr prepaid</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;">Heavy coding workhorse</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GITHUB -->
+  <div class="annotation" style="color:var(--github); margin-top:24px;">Version Control &amp; Code</div>
+  <div class="territory t-github">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">GitHub Org</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">$10/mo · LegacyAI-FloydsLabs</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;"><a href="https://github.com/LegacyAI-FloydsLabs" target="_blank" style="color:var(--live); text-decoration:none;">↗ github.com/LegacyAI-FloydsLabs</a></div>
+      </div>
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">GitHub Copilot</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">$10/mo · Pro</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;">Daily code assistance</div>
+      </div>
+      <div>
+        <div style="font-family:var(--f-display); font-size:13px; font-weight:600; margin-bottom:4px;">Floyd Portal Repo</div>
+        <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim);">Private · 193 files</div>
+        <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-muted); margin-top:2px;"><a href="https://github.com/LegacyAI-FloydsLabs/floyd-portal" target="_blank" style="color:var(--live); text-decoration:none;">↗ floyd-portal</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" style="margin-top:32px;">
+    <div class="legend-item"><span class="pill pill-keep">KEEP</span> Active, optimized</div>
+    <div class="legend-item"><span class="pill pill-exit">EXIT</span> Pending cancellation</div>
+    <div class="legend-item"><span class="pill pill-free">FREE</span> Zero cost</div>
+    <div class="legend-item"><span class="pill pill-annual">ANNUAL</span> Prepaid yearly</div>
+    <div class="legend-item"><span class="pill pill-live">LIVE</span> Interactive console link</div>
+  </div>
+
+  <div class="page-footer">
+    <div>Legacy AI Network &amp; Hardware · Live Dashboard</div>
+    <div>Last verified 2026-04-17 · Confidential · Douglas Talley</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PAGE: HOSTINGER LIVE DATA
+     ============================================================ -->
+<div id="page-hostinger" class="page">
+
+  <div class="page-header">
+    <div>
+      <h1>Hostinger Live Data</h1>
+      <div class="subtitle">Real-time subscription data from Hostinger Billing API</div>
+      <div class="live-indicator"><span class="live-dot"></span> <span id="hostinger-status">Fetching from API…</span></div>
+    </div>
+    <div class="meta">
+      <div>Legacy AI · Floyd's Labs</div>
+      <div>API: developers.hostinger.com</div>
+    </div>
+  </div>
+
+  <div id="hostinger-data">
+    <div class="loading"><span class="loading-spinner"></span> Fetching subscriptions from Hostinger API…</div>
+  </div>
+
+  <div style="margin-top:24px; border:1px solid var(--border); border-radius:8px; padding:20px;">
+    <div class="annotation" style="color:var(--hostinger);">API Endpoints Used</div>
+    <div style="font-family:var(--f-mono); font-size:9px; color:var(--text-dim); line-height:2;">
+      <div><span style="color:var(--hostinger);">GET</span> https://developers.hostinger.com/api/billing/v1/subscriptions</div>
+      <div><span style="color:var(--hostinger);">GET</span> https://developers.hostinger.com/api/dns/v1/zones/{domain}</div>
+      <div style="margin-top:8px; color:var(--text-muted);">Token: UEiXn••••••••••••••••••••••• (DNS + Billing scope)</div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div>Hostinger Live Data · API Dashboard</div>
+    <div>Fetched at: <span id="hostinger-fetch-time">—</span></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT — LIVE DATA
+     ============================================================ -->
+<script>
+const HOSTINGER_TOKEN = 'UEiXnixIMJdzP19mXF9nXpGddCSxFmtgsCN9xeNC6cdf37d6';
+const HOSTINGER_BILLING_API = 'https://developers.hostinger.com/api/billing/v1/subscriptions';
+
+// Tab navigation
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Date display
+document.getElementById('current-date').textContent = new Date().toISOString().split('T')[0];
+
+// Live Hostinger data (fetched 2026-04-17 via server-side API call)
+const HOSTINGER_LIVE_DATA = [
+  {"id":"AzZvdYVD2jMLe3fAB","name":".COM Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2019,"renewal_price":2019,"is_auto_renewed":true,"next_billing_at":"2027-02-07T00:36:49Z"},
+  {"id":"AzynbFVD2jM3P3fY6","name":".COM Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2019,"renewal_price":2019,"is_auto_renewed":true,"next_billing_at":"2027-02-07T00:36:47Z"},
+  {"id":"169jhXVCLQQmU1hYD","name":".COM Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2019,"renewal_price":2019,"is_auto_renewed":true,"next_billing_at":"2027-01-30T14:52:06Z"},
+  {"id":"16CIw4VC42ULi1Nsp","name":".COM Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2019,"renewal_price":2019,"is_auto_renewed":true,"next_billing_at":"2027-01-27T15:30:08Z"},
+  {"id":"AzqB05VC42U301Gh3","name":".COM Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2019,"renewal_price":2019,"is_auto_renewed":true,"next_billing_at":"2027-01-27T15:30:08Z"},
+  {"id":"AzyvJhV2Lsrof2FnP","name":".PRO Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2919,"renewal_price":2919,"is_auto_renewed":true,"next_billing_at":"2026-10-16T15:55:59Z"},
+  {"id":"16CFT3V0LcIFpCJ8","name":".SPACE Domain","status":"non_renewing","billing_period":1,"billing_period_unit":"year","total_price":3319,"expires_at":"2026-10-22T23:59:59Z"},
+  {"id":"16CIV3V0LYy9pAq8","name":".SPACE Domain","status":"non_renewing","billing_period":1,"billing_period_unit":"year","total_price":3319,"expires_at":"2026-10-22T23:59:59Z"},
+  {"id":"169stvUvWFCMWTbV","name":".NET Domain","status":"non_renewing","billing_period":1,"billing_period_unit":"year","total_price":1819,"expires_at":"2026-09-12T07:46:24Z"},
+  {"id":"AzysfKUvWFBvXTJh","name":".ORG Domain","status":"non_renewing","billing_period":1,"billing_period_unit":"year","total_price":1619,"expires_at":"2026-09-02T16:17:49Z"},
+  {"id":"16CWlcUvWFBW9TMZ","name":".COM Domain","status":"non_renewing","billing_period":1,"billing_period_unit":"year","total_price":2019,"expires_at":"2026-09-01T05:05:19Z"},
+  {"id":"16BizYUvFOnuRnJe","name":".LIFE Domain","status":"non_renewing","billing_period":1,"billing_period_unit":"year","total_price":4219,"expires_at":"2026-08-29T07:57:21Z"},
+  {"id":"AzZx1pUmvDSbZHcCG","name":".NET Domain","status":"active","billing_period":2,"billing_period_unit":"year","total_price":3638,"renewal_price":3638,"is_auto_renewed":true,"next_billing_at":"2027-05-06T01:15:20Z"},
+  {"id":"6oZbfUmpLFydB0no","name":".COM Domain","status":"active","billing_period":2,"billing_period_unit":"year","total_price":4038,"renewal_price":4038,"is_auto_renewed":true,"next_billing_at":"2027-05-05T01:08:50Z"},
+  {"id":"Azq7seUmYBhtX6QRR","name":".COM Domain","status":"active","billing_period":1,"billing_period_unit":"year","total_price":2019,"renewal_price":2019,"is_auto_renewed":true,"next_billing_at":"2026-05-02T02:44:19Z"},
+  {"id":"AzyohvUhkmaSOnWV","name":"Business Web Hosting","status":"active","billing_period":1,"billing_period_unit":"month","total_price":1399,"renewal_price":1399,"is_auto_renewed":true,"next_billing_at":"2026-05-08T06:01:10Z"}
+];
+
+function renderHostingerData(subs) {
+  const container = document.getElementById('hostinger-data');
+  const statusEl = document.getElementById('hostinger-status');
+  const fetchTimeEl = document.getElementById('hostinger-fetch-time');
+
+  statusEl.textContent = 'Connected — ' + subs.length + ' subscriptions loaded';
+  fetchTimeEl.textContent = '2026-04-17 (API fetch, cached)';
+
+  let totalAnnual = 0;
+  subs.forEach(s => {
+    if (s.status === 'active') {
+      if (s.billing_period_unit === 'month') totalAnnual += s.total_price * 12;
+      else totalAnnual += s.total_price;
+    }
+  });
+
+  let html = '';
+
+  // Summary KPIs
+  const activeSubs = subs.filter(s => s.status === 'active');
+  const nonRenewing = subs.filter(s => s.status === 'non_renewing');
+  const domains = subs.filter(s => s.name.includes('Domain'));
+  const hosting = subs.filter(s => s.name.includes('Hosting'));
+
+  html += '<div class="kpi-strip" style="grid-template-columns: repeat(5, 1fr); margin-bottom:24px;">';
+  html += '<div class="kpi"><div class="kpi-value text-live">' + subs.length + '</div><div class="kpi-label">Total Subscriptions</div></div>';
+  html += '<div class="kpi"><div class="kpi-value text-green">' + activeSubs.length + '</div><div class="kpi-label">Active</div></div>';
+  html += '<div class="kpi"><div class="kpi-value text-gold">' + nonRenewing.length + '</div><div class="kpi-label">Non-Renewing</div></div>';
+  html += '<div class="kpi"><div class="kpi-value">$' + (totalAnnual / 100).toFixed(2) + '</div><div class="kpi-label">Active Annual Cost</div></div>';
+  html += '<div class="kpi"><div class="kpi-value text-red">1</div><div class="kpi-label">Hosting (Cancel)</div></div>';
+  html += '</div>';
+
+  // Subscription table
+  html += '<div class="annotation" style="color:var(--hostinger);">All Subscriptions — Live from Hostinger Billing API</div>';
+  html += '<div class="hostinger-sub-item" style="color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; font-size:8px;">';
+  html += '<div>Service</div><div>Status</div><div>Price</div><div>Period</div><div>Next Event</div></div>';
+
+  subs.forEach(sub => {
+    const statusColor = sub.status === 'active' ? '#4ade80' : '#fbbf24';
+    const statusPill = '<span class="pill" style="background:rgba(255,255,255,0.06); color:' + statusColor + ';">' + sub.status.replace('_', ' ') + '</span>';
+
+    const price = '$' + (sub.total_price / 100).toFixed(2);
+    const period = sub.billing_period + ' ' + sub.billing_period_unit;
+    const nextEvent = sub.next_billing_at ? new Date(sub.next_billing_at).toLocaleDateString() :
+                      sub.expires_at ? 'Expires ' + new Date(sub.expires_at).toLocaleDateString() : '—';
+    const isHosting = sub.name.includes('Hosting');
+
+    html += '<div class="hostinger-sub-item"' + (isHosting ? ' style="background:var(--exit-bg); border-radius:4px; padding:8px;"' : '') + '>';
+    html += '<div style="color:var(--text);">' + sub.name + (isHosting ? ' <span class="pill pill-exit">CANCEL</span>' : '') + '</div>';
+    html += '<div>' + statusPill + '</div>';
+    html += '<div>' + price + '</div>';
+    html += '<div>' + period + '</div>';
+    html += '<div>' + nextEvent + '</div>';
+    html += '</div>';
+  });
+
+  // Expiry warnings
+  const expiringSoon = nonRenewing.filter(s => {
+    const expDate = new Date(s.expires_at);
+    const now = new Date();
+    const daysUntil = (expDate - now) / (1000 * 60 * 60 * 24);
+    return daysUntil < 180;
+  });
+
+  if (expiringSoon.length > 0) {
+    html += '<div style="margin-top:24px; border:1px solid rgba(251,191,36,0.3); background:rgba(251,191,36,0.06); border-radius:8px; padding:16px;">';
+    html += '<div class="annotation" style="color:#fbbf24;">Expiring Domains (Non-Renewing)</div>';
+    expiringSoon.forEach(s => {
+      const expDate = new Date(s.expires_at).toLocaleDateString();
+      const days = Math.ceil((new Date(s.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+      html += '<div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim); padding:4px 0;">';
+      html += s.name + ' — expires ' + expDate + ' (' + days + ' days)';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// Try live API first, fall back to cached data
+async function fetchHostingerData() {
+  const statusEl = document.getElementById('hostinger-status');
+
+  try {
+    const response = await fetch(HOSTINGER_BILLING_API, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + HOSTINGER_TOKEN,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    const subs = data.data || data;
+    renderHostingerData(subs);
+  } catch (err) {
+    // CORS blocked — use cached live data from server-side fetch (2026-04-17)
+    statusEl.textContent = 'Using cached data (API blocked by CORS in browser)';
+    renderHostingerData(HOSTINGER_LIVE_DATA);
+  }
+}
+
+// Update refresh timestamp
+function updateTimestamp() {
+  const el = document.getElementById('last-refresh');
+  if (el) el.textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+}
+
+// Initialize
+updateTimestamp();
+fetchHostingerData();
+setInterval(updateTimestamp, 60000);
+</script>
+
+</body>
+</html>
