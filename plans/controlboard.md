@@ -824,8 +824,8 @@ Step 1 ─┬─> Step 2 ─> Step 3 ─> Step 4 ─┬─> Step 5  (parallel)
 - [!] Step 2 — Quarantine superseded DeepSeek artifacts _(blocked: v1.6.1 INSTALL.sh not yet applied → no `floyd-quarantine` helper installed yet)_
 - [x] Step 3 — repository_report.json schema + populator (commit `bd492e3` 2026-04-30T17:02; populator + 13 tests + 2 external fixtures)
 - [x] Step 4 — Page 1 Governance Dashboard (commit `a62f7cf` 2026-04-30; 13 endpoint tests, browser smoke-tested with 49 detected projects)
-- [ ] Step 5 — Page 2 Six-Project Workspace _(parallel-eligible)_
-- [ ] Step 6 — **Dual Terminal tab** — full port of TTY Bridge UI + WebSocket rewire (top-level tab, NOT a sidepanel) _(parallel-eligible)_
+- [x] Step 5 — Page 2 Six-Project Workspace (commit `e249de5` 2026-05-01; 12 tests, browser-verified 6 panes spawn into ranked projects)
+- [x] Step 6 — **Dual Terminal tab** — full port of TTY Bridge UI + WebSocket rewire (commit `3dd12e2` 2026-05-01; 9 lifecycle tests, browser-verified live PTY connection across single/dual/triple layouts)
 - [ ] Step 7 — Bootstrap Worker prompt + Dispatch Bootstrap (**strongest model**)
 - [ ] Step 8 — First batch of CANDIDATE projects bootstrapped end-to-end
 - [~] Step 9 — Page 4 MWIDE embed (commit `08b20d0` 2026-05-01; ControlBoard-side complete with 6 tests + reachability probe + fallback panel; MWIDE-side cross-project edits staged at `control-center/docs/mwide-port-migration.md` for Douglas)
