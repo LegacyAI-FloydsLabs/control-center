@@ -828,11 +828,11 @@ Step 1 ─┬─> Step 2 ─> Step 3 ─> Step 4 ─┬─> Step 5  (parallel)
 - [ ] Step 6 — **Dual Terminal tab** — full port of TTY Bridge UI + WebSocket rewire (top-level tab, NOT a sidepanel) _(parallel-eligible)_
 - [ ] Step 7 — Bootstrap Worker prompt + Dispatch Bootstrap (**strongest model**)
 - [ ] Step 8 — First batch of CANDIDATE projects bootstrapped end-to-end
-- [ ] Step 9 — Page 4 MWIDE embed _(parallel-eligible)_
+- [~] Step 9 — Page 4 MWIDE embed (commit `08b20d0` 2026-05-01; ControlBoard-side complete with 6 tests + reachability probe + fallback panel; MWIDE-side cross-project edits staged at `control-center/docs/mwide-port-migration.md` for Douglas)
 - [ ] Step 10 — FLOYD CURSE'M launcher _(parallel-eligible)_
 - [ ] Step 11 — Dispatch Finisher + Orchestrator integration (**strongest model**)
-- [ ] Step 12 — Page 5: Mac System Health (cleanup report LIVE) _(parallel-eligible, added 2026-04-30)_
-- [ ] Step 13 — Page 6: Infrastructure Cartography (embed) _(parallel-eligible, added 2026-04-30)_
+- [x] Step 12 — Page 5: Mac System Health (cleanup report LIVE) (commit `66a794a` 2026-05-01; 24 tests, browser-verified live scan)
+- [x] Step 13 — Page 6: Infrastructure Cartography (embed) (commit `7812941` 2026-04-30; 8 tests, browser-verified iframe loads)
 
 ## Plan mutation protocol
 
