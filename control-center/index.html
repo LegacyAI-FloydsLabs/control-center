@@ -496,6 +496,96 @@
             padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; outline: none;
         }
 
+        /* ---- System Health (dark, mirrors mac-cleanup-report.html) ---- */
+        .cb-page#cb-page-health { background: #0d1117; color: #e6edf3; }
+        .health-page {
+            padding: 2rem; overflow-y: auto; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+            line-height: 1.6;
+        }
+        .health-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            border-bottom: 1px solid #30363d; padding-bottom: 1rem; margin-bottom: 1.5rem;
+        }
+        .health-header h1 {
+            font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #58a6ff, #bc8cff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .health-header p { color: #8b949e; font-size: 0.85rem; margin-top: 0.2rem; }
+        .health-controls { display: flex; align-items: center; gap: 12px; }
+        .health-controls #health-scan-meta { color: #8b949e; font-size: 0.78rem; }
+
+        .health-stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem; margin-bottom: 2rem;
+        }
+        .health-stat {
+            background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+            padding: 1rem; text-align: center;
+        }
+        .health-stat .label {
+            font-size: 0.7rem; color: #8b949e; text-transform: uppercase;
+            letter-spacing: 0.05em; margin-bottom: 0.4rem;
+        }
+        .health-stat .value { font-size: 1.6rem; font-weight: 700; }
+        .health-stat .value.red { color: #f85149; }
+        .health-stat .value.yellow { color: #d29922; }
+        .health-stat .value.green { color: #3fb950; }
+        .health-stat .value.accent { color: #58a6ff; }
+        .health-stat .sub { font-size: 0.72rem; color: #8b949e; margin-top: 0.2rem; }
+
+        .health-section { margin-bottom: 2rem; }
+        .health-section h2 {
+            font-size: 1.05rem; font-weight: 600; margin-bottom: 0.75rem;
+            padding-bottom: 0.4rem; border-bottom: 1px solid #30363d;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .health-section .hicon { font-size: 1rem; }
+
+        .health-table-wrap { overflow-x: auto; border: 1px solid #30363d; border-radius: 8px; }
+        .health-table {
+            width: 100%; border-collapse: collapse; font-size: 0.82rem;
+            background: #0d1117;
+        }
+        .health-table th {
+            text-align: left; padding: 0.5rem 0.75rem;
+            background: #1c2129; color: #8b949e;
+            font-weight: 600; font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 0.04em; border-bottom: 1px solid #30363d;
+            cursor: pointer; user-select: none; white-space: nowrap;
+        }
+        .health-table th:hover { color: #58a6ff; }
+        .health-table th.sorted-asc::after { content: " ▲"; color: #58a6ff; }
+        .health-table th.sorted-desc::after { content: " ▼"; color: #58a6ff; }
+        .health-table td {
+            padding: 0.5rem 0.75rem; border-bottom: 1px solid #30363d;
+            white-space: nowrap;
+        }
+        .health-table tr:hover { background: rgba(88, 166, 255, 0.04); }
+
+        .health-badge {
+            display: inline-block; padding: 0.12rem 0.55rem; border-radius: 99px;
+            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .health-badge.remove { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+        .health-badge.consider { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+        .health-badge.keep { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+        .health-badge.tame { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+        .health-badge.system { background: rgba(139, 148, 158, 0.18); color: #8b949e; }
+
+        #health-candidates {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 0.75rem;
+        }
+        .health-cand-card {
+            background: #161b22; border: 1px solid #30363d; border-left: 3px solid #f85149;
+            border-radius: 8px; padding: 0.85rem 1rem;
+        }
+        .health-cand-card .cn { font-weight: 600; color: #e6edf3; margin-bottom: 0.2rem; }
+        .health-cand-card .cm { color: #8b949e; font-size: 0.78rem; }
+
         /* Placeholder pages */
         .cb-placeholder {
             flex: 1; display: flex; align-items: center; justify-content: center;
@@ -650,6 +740,7 @@
             <button class="cb-nav-tab active" data-cb-page="governance" id="cb-tab-governance">Governance</button>
             <button class="cb-nav-tab" data-cb-page="terminals" id="cb-tab-terminals">Terminals</button>
             <button class="cb-nav-tab" data-cb-page="workspace" id="cb-tab-workspace">Workspace</button>
+            <button class="cb-nav-tab" data-cb-page="health" id="cb-tab-health">System Health</button>
             <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">Infrastructure</button>
             <span class="cb-nav-spacer"></span>
             <span class="cb-nav-meta" id="cb-nav-meta">
@@ -725,6 +816,61 @@
             <div class="cb-placeholder">
                 <strong>Workspace</strong>
                 <span>6-project workspace lands in Step 5 of plans/controlboard.md.</span>
+            </div>
+        </div>
+
+        <!-- Page 5: Mac System Health (Step 12) -->
+        <div class="cb-page" id="cb-page-health" role="region" aria-labelledby="cb-tab-health">
+            <div class="health-page" id="health-page">
+                <header class="health-header">
+                    <div>
+                        <h1>Mac System Health</h1>
+                        <p id="health-subtitle">Live scan of /Applications, ~/Applications, and current memory usage.</p>
+                    </div>
+                    <div class="health-controls">
+                        <span id="health-scan-meta"></span>
+                        <button class="btn btn-sm btn-accent" id="health-rescan-btn">↻ Re-scan now</button>
+                    </div>
+                </header>
+                <div class="health-stats" id="health-stats"></div>
+                <section class="health-section">
+                    <h2><span class="hicon">💾</span> Disk Recovery — Apps by Size</h2>
+                    <div class="health-table-wrap">
+                        <table class="health-table" id="health-apps-table">
+                            <thead>
+                                <tr>
+                                    <th data-sort="name">Application</th>
+                                    <th data-sort="size_mb">Size (MB)</th>
+                                    <th data-sort="days_idle">Idle (days)</th>
+                                    <th data-sort="recommendation">Recommendation</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="health-section">
+                    <h2><span class="hicon">🧠</span> Memory — Current Hogs</h2>
+                    <div class="health-table-wrap">
+                        <table class="health-table" id="health-mem-table">
+                            <thead>
+                                <tr>
+                                    <th>Process</th>
+                                    <th>PIDs</th>
+                                    <th>RSS (GB)</th>
+                                    <th>% of RSS</th>
+                                    <th>Verdict</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="health-section" id="health-candidates-section">
+                    <h2><span class="hicon">⚡</span> Top Recovery Candidates</h2>
+                    <div id="health-candidates"></div>
+                </section>
             </div>
         </div>
 
@@ -2131,6 +2277,7 @@
             governance: $('cb-page-governance'),
             terminals:  $('cb-page-terminals'),
             workspace:  $('cb-page-workspace'),
+            health:     $('cb-page-health'),
             embed:      $('cb-page-embed'),
         };
         let currentPage = 'governance';
@@ -2145,6 +2292,7 @@
                 window.dispatchEvent(new Event('resize'));
             }
             if (name === 'governance') refreshGovernance();
+            if (name === 'health') refreshHealth();
         }
         navTabs.forEach(t => t.addEventListener('click', () => switchPage(t.dataset.cbPage)));
 
@@ -2359,6 +2507,132 @@
 
         // Initial load — Governance is the default tab
         document.addEventListener('DOMContentLoaded', refreshGovernance);
+
+        // ---- System Health ----
+        let healthState = { sortField: 'size_mb', sortDir: 'desc', data: null };
+        async function fetchHealth(rescan = false) {
+            try {
+                const url = rescan ? '/api/system-health/rescan' : '/api/system-health';
+                const opts = rescan ? { method: 'POST' } : {};
+                const r = await fetch(url, opts);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return await r.json();
+            } catch (e) {
+                console.error('[Health] fetch failed', e);
+                return null;
+            }
+        }
+        function fmtMB(mb) { return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb.toFixed(0) + ' MB'; }
+        function renderHealthStats(stats) {
+            const cards = [
+                { label: 'Apps Scanned', value: stats.total_apps_scanned, cls: 'accent', sub: '' },
+                { label: 'Recoverable', value: stats.total_recoverable_gb + ' GB', cls: stats.total_recoverable_gb > 1 ? 'green' : 'accent', sub: stats.idle_app_count + ' idle apps' },
+                { label: 'Memory Used', value: stats.memory_used_gb + ' GB', cls: stats.memory_used_gb / stats.memory_total_gb > 0.85 ? 'red' : 'yellow', sub: 'of ' + stats.memory_total_gb + ' GB' },
+                { label: 'Memory Free', value: stats.memory_free_gb + ' GB', cls: stats.memory_free_gb < 2 ? 'red' : 'green', sub: '' },
+                { label: 'Top Hog', value: stats.top_hog, cls: 'yellow', sub: '' },
+            ];
+            $('health-stats').innerHTML = cards.map(c =>
+                `<div class="health-stat">
+                    <div class="label">${escapeHtml(c.label)}</div>
+                    <div class="value ${c.cls}">${escapeHtml(String(c.value))}</div>
+                    ${c.sub ? `<div class="sub">${escapeHtml(c.sub)}</div>` : ''}
+                </div>`
+            ).join('');
+        }
+        function sortApps(rows) {
+            const f = healthState.sortField;
+            const dir = healthState.sortDir === 'asc' ? 1 : -1;
+            return rows.slice().sort((a, b) => {
+                let va = a[f], vb = b[f];
+                if (va == null) va = -Infinity;
+                if (vb == null) vb = -Infinity;
+                if (typeof va === 'string') return dir * va.localeCompare(vb);
+                return dir * (va - vb);
+            });
+        }
+        function renderHealthApps(apps) {
+            const tbody = $('health-apps-table').querySelector('tbody');
+            const sorted = sortApps(apps);
+            tbody.innerHTML = sorted.map(a => `
+                <tr>
+                    <td>${escapeHtml(a.name)}</td>
+                    <td>${a.size_mb.toFixed(0)}</td>
+                    <td>${a.days_idle == null ? '—' : a.days_idle}</td>
+                    <td><span class="health-badge ${a.recommendation}">${a.recommendation}</span></td>
+                    <td style="color:#8b949e">${escapeHtml(a.notes || '')}</td>
+                </tr>
+            `).join('');
+            // Highlight active sort header
+            $('health-apps-table').querySelectorAll('th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.sort === healthState.sortField) {
+                    th.classList.add(healthState.sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+        function renderHealthMem(hogs) {
+            const tbody = $('health-mem-table').querySelector('tbody');
+            tbody.innerHTML = hogs.map(h => `
+                <tr>
+                    <td>${escapeHtml(h.process_name)}</td>
+                    <td>${h.pid_count}</td>
+                    <td>${h.rss_gb.toFixed(2)}</td>
+                    <td>${h.pct_total.toFixed(1)}%</td>
+                    <td><span class="health-badge ${h.classification}">${h.classification}</span></td>
+                </tr>
+            `).join('');
+        }
+        function renderHealthCandidates(cands) {
+            const wrap = $('health-candidates');
+            if (!cands || cands.length === 0) {
+                wrap.innerHTML = `<div style="color:#8b949e; font-size:0.85rem;">No apps idle ≥90 days. Disk is clean.</div>`;
+                $('health-candidates-section').style.opacity = '0.7';
+                return;
+            }
+            $('health-candidates-section').style.opacity = '1';
+            wrap.innerHTML = cands.map(c => `
+                <div class="health-cand-card">
+                    <div class="cn">${escapeHtml(c.name)}</div>
+                    <div class="cm">${fmtMB(c.size_mb)} · idle ${c.days_idle ?? '?'} days</div>
+                    <div class="cm" style="font-size:0.7rem; opacity:0.7; margin-top:4px;">${escapeHtml(c.path)}</div>
+                </div>
+            `).join('');
+        }
+        function renderHealthMeta(data) {
+            const ts = data.scanned_at ? new Date(data.scanned_at) : null;
+            const fresh = data.fresh ? '✓ fresh' : '⏱ stale';
+            const ageStr = ts ? `scanned ${ts.toLocaleString()}` : 'never scanned';
+            $('health-scan-meta').textContent = `${ageStr} · ${fresh} · ${data.duration_seconds || 0}s`;
+        }
+        async function refreshHealth(rescan = false) {
+            const meta = $('health-scan-meta');
+            if (meta) meta.textContent = rescan ? 'scanning…' : 'loading…';
+            const data = await fetchHealth(rescan);
+            if (!data || data.error) {
+                if (meta) meta.textContent = 'scan failed';
+                return;
+            }
+            healthState.data = data;
+            renderHealthStats(data.stats || {});
+            renderHealthApps(data.apps || []);
+            renderHealthMem(data.memory_hogs || []);
+            renderHealthCandidates(data.disk_recovery_candidates || []);
+            renderHealthMeta(data);
+        }
+        // Wire sortable headers
+        document.querySelectorAll('#health-apps-table thead th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const f = th.dataset.sort;
+                if (healthState.sortField === f) {
+                    healthState.sortDir = healthState.sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    healthState.sortField = f;
+                    healthState.sortDir = (f === 'name' || f === 'recommendation') ? 'asc' : 'desc';
+                }
+                if (healthState.data) renderHealthApps(healthState.data.apps || []);
+            });
+        });
+        $('health-rescan-btn').addEventListener('click', () => refreshHealth(true));
     })();
     </script>
 </body>

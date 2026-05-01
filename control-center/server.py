@@ -6,6 +6,7 @@ import os
 import pty
 import shlex
 import struct
+import sys
 import termios
 import time
 import uuid
@@ -1875,6 +1876,80 @@ async def quarantine_summary():
     _QUARANTINE_CACHE["data"] = result
     _QUARANTINE_CACHE["ts"] = now
     return {**result, "cached": False}
+
+
+# ---------------------------------------------------------------------------
+# ControlBoard endpoints — Page 5: Mac System Health
+# ---------------------------------------------------------------------------
+#
+# Authority: plans/controlboard.md Step 12
+# Producer:  scripts/system_scan.py (writes .floyd/system-health-cache.json)
+# Consumer:  the System Health tab in index.html
+#
+# GET  /api/system-health         — serves cached scan; triggers a fresh scan
+#                                    if the cache is older than 5 minutes
+# POST /api/system-health/rescan  — synchronous re-scan with 30s wall-clock cap
+
+import importlib.util as _importlib_util
+from typing import Any as _Any
+
+_SYSTEM_SCAN_FRESH_SECONDS = 300  # 5 minutes
+_SCAN_SCRIPT_PATH = _PathLib(__file__).parent / "scripts" / "system_scan.py"
+_system_scan_module: _Any = None
+
+
+def _get_system_scan_module():
+    """Lazy-load scripts/system_scan.py once per process.
+
+    Python 3.14's dataclass implementation walks sys.modules during decoration
+    to resolve KW_ONLY types, so the module MUST be registered in sys.modules
+    BEFORE exec_module runs — otherwise the @dataclass decorators raise
+    AttributeError on a None lookup.
+    """
+    global _system_scan_module
+    if _system_scan_module is not None:
+        return _system_scan_module
+    if "system_scan" in sys.modules:
+        _system_scan_module = sys.modules["system_scan"]
+        return _system_scan_module
+    spec = _importlib_util.spec_from_file_location("system_scan", _SCAN_SCRIPT_PATH)
+    if spec is None or spec.loader is None:
+        return None
+    mod = _importlib_util.module_from_spec(spec)
+    sys.modules["system_scan"] = mod
+    spec.loader.exec_module(mod)
+    _system_scan_module = mod
+    return mod
+
+
+@app.get("/api/system-health")
+async def get_system_health():
+    """Return the latest system health report. Refresh if stale."""
+    mod = _get_system_scan_module()
+    if mod is None:
+        return {"error": "system_scan module not found"}
+    if not mod.cache_is_fresh(_SYSTEM_SCAN_FRESH_SECONDS):
+        report = mod.build_report()
+        mod.write_cache(report)
+    cached = mod.read_cache()
+    if cached is None:
+        return {"error": "scan failed and no cache exists"}
+    return {**cached, "cached": True, "fresh": mod.cache_is_fresh(_SYSTEM_SCAN_FRESH_SECONDS)}
+
+
+@app.post("/api/system-health/rescan")
+async def rescan_system_health():
+    """Synchronously re-scan and return fresh data."""
+    mod = _get_system_scan_module()
+    if mod is None:
+        return {"error": "system_scan module not found"}
+    started = time.time()
+    report = mod.build_report()
+    mod.write_cache(report)
+    payload = json.loads(report.to_json())
+    payload["wall_clock_seconds"] = round(time.time() - started, 2)
+    payload["fresh"] = True
+    return payload
 
 
 # ---------------------------------------------------------------------------
