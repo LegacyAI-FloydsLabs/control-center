@@ -1879,6 +1879,40 @@ async def quarantine_summary():
 
 
 # ---------------------------------------------------------------------------
+# ControlBoard endpoint — Page 2: Six-Project Workspace ranking (Step 5)
+# ---------------------------------------------------------------------------
+#
+# Authority: plans/controlboard.md Step 5
+#
+# GET /api/projects/top-six-active — returns the top 6 incomplete projects
+# (completion% < 100), sorted by completion% desc with last_bootstrap asc as
+# tiebreak (oldest bootstrap loses).
+
+
+def _rank_top_six(projects: list[dict]) -> list[dict]:
+    """Pure ranker — split out so tests can hit it without scanning drives."""
+    incomplete = [p for p in projects if p.get("completion_percentage", 0) < 100]
+    incomplete.sort(key=lambda p: (
+        -p.get("completion_percentage", 0),
+        p.get("last_bootstrap", "") or "",  # empty strings sort first → oldest first
+    ))
+    return incomplete[:6]
+
+
+@app.get("/api/projects/top-six-active")
+async def top_six_active():
+    """Return the 6 highest-completion incomplete projects to populate the Workspace."""
+    now = time.time()
+    if _PROJECTS_CACHE["data"] is not None and (now - _PROJECTS_CACHE["ts"]) < _CACHE_TTL_SECONDS:
+        projects = _PROJECTS_CACHE["data"]
+    else:
+        projects = _scan_projects()
+        _PROJECTS_CACHE["data"] = projects
+        _PROJECTS_CACHE["ts"] = now
+    return {"projects": _rank_top_six(projects), "canonical_version": _CANONICAL_VERSION}
+
+
+# ---------------------------------------------------------------------------
 # ControlBoard endpoints — Page 5: Mac System Health
 # ---------------------------------------------------------------------------
 #
@@ -1966,28 +2000,53 @@ async def rescan_system_health():
 import os as _os_for_sidepanel
 
 
+class SidepanelSpawnRequest(BaseModel):
+    directory: Optional[str] = None
+    label: Optional[str] = None
+    name_prefix: Optional[str] = None
+    extra_tags: Optional[List[str]] = None
+
+
 @app.post("/api/sidepanel/spawn")
-async def spawn_sidepanel_agent():
+async def spawn_sidepanel_agent(req: Optional[SidepanelSpawnRequest] = None):
     """Create an ephemeral sidepanel agent and start it.
 
-    Returns {agent_id, name}. The frontend then opens /ws/{agent_id}.
-    The caller MUST DELETE the agent when its terminal pane closes — these
-    are not auto-reaped (for now; the v1 contract is "frontend cleans up").
+    Body (all fields optional):
+      directory   — working directory; defaults to $HOME
+      label       — UI label; defaults to "Dual Terminal"
+      name_prefix — agent name prefix; defaults to "sidepanel"
+      extra_tags  — additional tags (the 'ephemeral' and 'sidepanel' tags
+                    are always applied)
+
+    Returns {agent_id, name, shell, directory}. The frontend then opens
+    /ws/{agent_id}. The caller MUST DELETE the agent when its terminal
+    pane closes — these are not auto-reaped.
     """
     agents = load_agents()
     agent_id = str(uuid.uuid4())
     short = agent_id[:8]
     home = _os_for_sidepanel.environ.get("HOME", "/tmp")
     shell = _os_for_sidepanel.environ.get("SHELL", "/bin/zsh")
+    req = req or SidepanelSpawnRequest()
+    directory = req.directory or home
+    if not _PathLib(directory).is_dir():
+        directory = home  # fall back silently rather than refuse
+    label = req.label or "Dual Terminal"
+    name_prefix = req.name_prefix or "sidepanel"
+    base_tags = ["ephemeral", "sidepanel"]
+    if req.extra_tags:
+        for t in req.extra_tags:
+            if t not in base_tags:
+                base_tags.append(t)
     new_agent = Agent(
         id=agent_id,
-        name=f"sidepanel-{short}",
-        label="Dual Terminal",
-        directory=home,
+        name=f"{name_prefix}-{short}",
+        label=label,
+        directory=directory,
         command=shell,
         env={},
         order=9999,  # sink to bottom of normal sidebar
-        tags=["ephemeral", "sidepanel"],
+        tags=base_tags,
         auto_start=True,
         pinned=False,
         launchd_type="none",
@@ -2002,7 +2061,7 @@ async def spawn_sidepanel_agent():
         await spawn_process(agent_id, agents[agent_id])
     except Exception as exc:  # pragma: no cover — defensive
         logger.warning("sidepanel spawn_process failed: %s", exc)
-    return {"agent_id": agent_id, "name": new_agent.name, "shell": shell}
+    return {"agent_id": agent_id, "name": new_agent.name, "shell": shell, "directory": directory}
 
 
 @app.delete("/api/sidepanel/{agent_id}")

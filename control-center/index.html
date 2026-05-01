@@ -496,6 +496,57 @@
             padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; outline: none;
         }
 
+        /* ---- Workspace (6-project grid) ---- */
+        .cb-page#cb-page-workspace { background: #0a0a0a; color: #e0e0e0; }
+        .ws-wrap { display: flex; flex-direction: column; height: 100%; }
+        .ws-toolbar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 12px;
+            background: #111111; border-bottom: 1px solid #2a2a2a;
+            flex-shrink: 0;
+        }
+        .ws-grid {
+            flex: 1; display: grid; gap: 1px; background: #2a2a2a;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            min-height: 0;
+        }
+        .ws-grid.layout-2x2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+        .ws-grid.layout-1x1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .ws-loading {
+            grid-column: 1 / -1; display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; opacity: 0.6;
+        }
+        .ws-pane {
+            background: #0a0a0a; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .ws-pane:focus-within { border-color: #00ff88; }
+        .ws-pane-header {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 8px;
+            background: #111111; border-bottom: 1px solid #2a2a2a;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+        .ws-pane-header .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #ffcc00; flex-shrink: 0;
+        }
+        .ws-pane-header .dot.connected { background: #00ff88; box-shadow: 0 0 4px #00ff88; }
+        .ws-pane-header .dot.error { background: #ff3388; }
+        .ws-pane-header .ws-pane-name {
+            color: #e0e0e0; font-weight: 600; font-size: 0.78rem;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            flex: 1;
+        }
+        .ws-pane-header .ws-pane-pct {
+            font-size: 0.65rem; opacity: 0.7; color: #00ff88;
+        }
+        .ws-pane-term { flex: 1; min-height: 0; padding: 2px; }
+        .ws-pane-term .xterm { height: 100% !important; }
+
         /* ---- Dual Terminal (sidepanel port) ---- */
         .cb-page#cb-page-dualterm { background: #0a0a0a; color: #e0e0e0; }
         .dt-wrap { display: flex; flex-direction: column; height: 100%; }
@@ -907,11 +958,19 @@
             </div>
         </div>
 
-        <!-- Page 3: Workspace (Step 5 placeholder) -->
+        <!-- Page 3: Six-Project Workspace (Step 5) -->
         <div class="cb-page" id="cb-page-workspace" role="region" aria-labelledby="cb-tab-workspace">
-            <div class="cb-placeholder">
-                <strong>Workspace</strong>
-                <span>6-project workspace lands in Step 5 of plans/controlboard.md.</span>
+            <div class="ws-wrap">
+                <div class="ws-toolbar">
+                    <strong>Workspace</strong>
+                    <span style="opacity:0.6; font-size:0.78rem;">Top 6 incomplete projects · live shells</span>
+                    <span class="spacer" style="flex:1"></span>
+                    <span id="ws-meta" style="font-size:0.72rem; opacity:0.6;"></span>
+                    <button class="btn btn-sm" id="ws-refresh-btn" title="Re-rank and respawn panes">↻ Refresh ranking</button>
+                </div>
+                <div class="ws-grid" id="ws-grid">
+                    <div class="ws-loading">Ranking projects…</div>
+                </div>
             </div>
         </div>
 
@@ -2423,6 +2482,7 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
             if (name === 'health') refreshHealth();
             if (name === 'mwide') refreshMwide();
             if (name === 'dualterm') initDualTerm();
+            if (name === 'workspace') initWorkspace();
         }
         navTabs.forEach(t => t.addEventListener('click', () => switchPage(t.dataset.cbPage)));
 
@@ -2963,7 +3023,8 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
         }
         // Best-effort cleanup of ephemeral agents on unload
         window.addEventListener('beforeunload', () => {
-            dtPanes.forEach(p => {
+            const all = [...dtPanes, ...wsPanes];
+            all.forEach(p => {
                 if (p.agent_id) {
                     try {
                         navigator.sendBeacon &&
@@ -2973,6 +3034,167 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
                 }
             });
         });
+
+        // ---- Workspace (Step 5) ----
+        const wsPanes = []; // [{agent_id, term, fitAddon, ws, frame, project}]
+        let wsInitialized = false;
+        async function wsFetchTopSix() {
+            try {
+                const r = await fetch('/api/projects/top-six-active');
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return await r.json();
+            } catch (e) {
+                console.error('[Workspace] fetch failed', e);
+                return null;
+            }
+        }
+        async function wsSpawnPaneAgent(directory, label, projectName) {
+            const r = await fetch('/api/sidepanel/spawn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    directory,
+                    label: 'Workspace · ' + (label || projectName),
+                    name_prefix: 'ws-' + (projectName || 'pane').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 24),
+                    extra_tags: ['workspace'],
+                }),
+            });
+            if (!r.ok) throw new Error('spawn failed: HTTP ' + r.status);
+            return await r.json();
+        }
+        function wsBuildPaneFrame(project) {
+            const frame = document.createElement('div');
+            frame.className = 'ws-pane';
+            frame.dataset.path = project.path;
+            frame.innerHTML = `
+                <div class="ws-pane-header">
+                    <span class="dot" data-role="status"></span>
+                    <span class="ws-pane-name" title="${escapeHtml(project.path)}">${escapeHtml(project.name)}</span>
+                    <span class="ws-pane-pct">${project.completion_percentage}%</span>
+                </div>
+                <div class="ws-pane-term" data-role="term"></div>`;
+            return frame;
+        }
+        async function wsAttachTerminalToPane(pane, frame, project) {
+            const termContainer = frame.querySelector('[data-role="term"]');
+            const statusDot = frame.querySelector('[data-role="status"]');
+            const term = new Terminal({
+                fontFamily: '"SF Mono", "Cascadia Code", "Fira Code", "Courier New", monospace',
+                fontSize: 12, cursorBlink: true,
+                theme: {
+                    background: '#0a0a0a', foreground: '#e0e0e0', cursor: '#00ff88',
+                    selectionBackground: 'rgba(0,255,136,0.2)',
+                },
+                scrollback: 5000, allowProposedApi: true,
+            });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(termContainer);
+            try { fitAddon.fit(); } catch {}
+            let info;
+            try {
+                info = await wsSpawnPaneAgent(project.path, project.name, project.name);
+            } catch (e) {
+                statusDot.classList.add('error');
+                term.write('\r\n\x1b[31m[error] ' + e.message + '\x1b[0m\r\n');
+                return null;
+            }
+            const wsUrl = `ws://${location.host}/ws/${info.agent_id}`;
+            const ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+            ws.addEventListener('open', () => {
+                statusDot.classList.add('connected');
+                ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+            });
+            ws.addEventListener('close', () => {
+                statusDot.classList.remove('connected');
+                statusDot.classList.add('error');
+            });
+            ws.addEventListener('error', () => statusDot.classList.add('error'));
+            ws.addEventListener('message', (ev) => {
+                if (ev.data instanceof ArrayBuffer) {
+                    term.write(new Uint8Array(ev.data));
+                } else if (typeof ev.data === 'string') {
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        if (msg.type === 'status' && msg.status === 'error') {
+                            term.write('\r\n\x1b[31m[error] ' + (msg.message || 'unknown') + '\x1b[0m\r\n');
+                        }
+                    } catch { term.write(ev.data); }
+                }
+            });
+            term.onData(d => { if (ws.readyState === WebSocket.OPEN) ws.send(d); });
+            term.onResize(({ cols, rows }) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+                }
+            });
+            pane.agent_id = info.agent_id;
+            pane.term = term;
+            pane.fitAddon = fitAddon;
+            pane.ws = ws;
+            pane.frame = frame;
+            pane.project = project;
+            return pane;
+        }
+        async function wsTearDown() {
+            for (const p of wsPanes) {
+                try { p.ws && p.ws.close(); } catch {}
+                if (p.agent_id) {
+                    try { await fetch('/api/sidepanel/' + encodeURIComponent(p.agent_id), { method: 'DELETE' }); } catch {}
+                }
+                if (p.frame) p.frame.remove();
+                if (p.term) try { p.term.dispose(); } catch {}
+            }
+            wsPanes.length = 0;
+        }
+        async function wsRender(rankPayload) {
+            const grid = $('ws-grid');
+            const projects = (rankPayload && rankPayload.projects) || [];
+            grid.innerHTML = '';
+            if (projects.length === 0) {
+                grid.innerHTML = '<div class="ws-loading">No incomplete projects to populate the workspace. Bootstrap a few, then refresh.</div>';
+                $('ws-meta').textContent = '0 panes';
+                return;
+            }
+            // Adjust grid layout based on count
+            grid.classList.remove('layout-1x1', 'layout-2x2');
+            if (projects.length === 1) grid.classList.add('layout-1x1');
+            else if (projects.length <= 4) grid.classList.add('layout-2x2');
+            // Spawn panes
+            for (const proj of projects) {
+                const frame = wsBuildPaneFrame(proj);
+                grid.appendChild(frame);
+                const pane = {};
+                wsPanes.push(pane);
+                await wsAttachTerminalToPane(pane, frame, proj);
+            }
+            $('ws-meta').textContent = `${projects.length} pane${projects.length === 1 ? '' : 's'} · canonical ${rankPayload.canonical_version || '?'}`;
+            // Refit after layout
+            requestAnimationFrame(() => {
+                wsPanes.forEach(p => { try { p.fitAddon && p.fitAddon.fit(); } catch {} });
+            });
+        }
+        async function wsRefresh() {
+            const grid = $('ws-grid');
+            grid.innerHTML = '<div class="ws-loading">Ranking projects…</div>';
+            await wsTearDown();
+            const data = await wsFetchTopSix();
+            if (!data) {
+                grid.innerHTML = '<div class="ws-loading" style="color:#ff3388">Failed to fetch ranking.</div>';
+                return;
+            }
+            await wsRender(data);
+        }
+        async function initWorkspace() {
+            if (wsInitialized) {
+                wsPanes.forEach(p => { try { p.fitAddon && p.fitAddon.fit(); } catch {} });
+                return;
+            }
+            wsInitialized = true;
+            $('ws-refresh-btn').addEventListener('click', wsRefresh);
+            await wsRefresh();
+        }
     })();
     </script>
 </body>
