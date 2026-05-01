@@ -1953,6 +1953,77 @@ async def rescan_system_health():
 
 
 # ---------------------------------------------------------------------------
+# ControlBoard endpoints — Dual Terminal sidepanel (Step 6)
+# ---------------------------------------------------------------------------
+#
+# Authority: plans/controlboard.md Step 6
+#
+# These two endpoints power the "Dual Terminal" tab — a port of the Floyd TTY
+# Bridge sidepanel UI. They are thin wrappers around the existing agent
+# lifecycle: each sidepanel pane spawns an ephemeral agent (tagged so the UI
+# can filter), attaches to /ws/{agent_id}, and deletes on tab close.
+
+import os as _os_for_sidepanel
+
+
+@app.post("/api/sidepanel/spawn")
+async def spawn_sidepanel_agent():
+    """Create an ephemeral sidepanel agent and start it.
+
+    Returns {agent_id, name}. The frontend then opens /ws/{agent_id}.
+    The caller MUST DELETE the agent when its terminal pane closes — these
+    are not auto-reaped (for now; the v1 contract is "frontend cleans up").
+    """
+    agents = load_agents()
+    agent_id = str(uuid.uuid4())
+    short = agent_id[:8]
+    home = _os_for_sidepanel.environ.get("HOME", "/tmp")
+    shell = _os_for_sidepanel.environ.get("SHELL", "/bin/zsh")
+    new_agent = Agent(
+        id=agent_id,
+        name=f"sidepanel-{short}",
+        label="Dual Terminal",
+        directory=home,
+        command=shell,
+        env={},
+        order=9999,  # sink to bottom of normal sidebar
+        tags=["ephemeral", "sidepanel"],
+        auto_start=True,
+        pinned=False,
+        launchd_type="none",
+        launchd_interval=3600,
+        launchd_watchpath="",
+        cron_expression=None,
+    )
+    agents[agent_id] = new_agent.model_dump()
+    save_agents(agents)
+    # Start the PTY immediately so the WebSocket connect is hot.
+    try:
+        await spawn_process(agent_id, agents[agent_id])
+    except Exception as exc:  # pragma: no cover — defensive
+        logger.warning("sidepanel spawn_process failed: %s", exc)
+    return {"agent_id": agent_id, "name": new_agent.name, "shell": shell}
+
+
+@app.delete("/api/sidepanel/{agent_id}")
+async def delete_sidepanel_agent(agent_id: str):
+    """Tear down an ephemeral sidepanel agent. Refuses to delete non-sidepanel agents."""
+    agents = load_agents()
+    if agent_id not in agents:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    tags = agents[agent_id].get("tags") or []
+    if "sidepanel" not in tags:
+        raise HTTPException(status_code=400, detail="Refusing to delete non-sidepanel agent via this endpoint")
+    await kill_process(agent_id)
+    _remove_launchd_plist(agent_id)
+    del agents[agent_id]
+    save_agents(agents)
+    agent_metrics.pop(agent_id, None)
+    _cron_last_fire.pop(agent_id, None)
+    return {"ok": True, "agent_id": agent_id}
+
+
+# ---------------------------------------------------------------------------
 # Frontend
 # ---------------------------------------------------------------------------
 

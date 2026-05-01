@@ -496,6 +496,44 @@
             padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; outline: none;
         }
 
+        /* ---- Dual Terminal (sidepanel port) ---- */
+        .cb-page#cb-page-dualterm { background: #0a0a0a; color: #e0e0e0; }
+        .dt-wrap { display: flex; flex-direction: column; height: 100%; }
+        .dt-toolbar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 12px;
+            background: #111111; border-bottom: 1px solid #2a2a2a;
+            flex-shrink: 0;
+        }
+        .dt-layout-label { color: #666; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .dt-layout-toggle { display: flex; gap: 2px; }
+        .dt-layout-toggle .btn.active { background: #00ff88; color: #000; border-color: #00ff88; font-weight: 600; }
+        .dt-grid {
+            flex: 1; display: grid; gap: 1px; background: #2a2a2a; min-height: 0;
+        }
+        .dt-grid[data-layout="single"] { grid-template-columns: 1fr; }
+        .dt-grid[data-layout="dual"]   { grid-template-columns: 1fr 1fr; }
+        .dt-grid[data-layout="triple"] { grid-template-columns: 1fr 1fr 1fr; }
+        .dt-pane {
+            background: #0a0a0a; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+        }
+        .dt-pane-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 10px;
+            background: #111111; border-bottom: 1px solid #2a2a2a;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 0.7rem; color: #666;
+            flex-shrink: 0;
+        }
+        .dt-pane-header .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #ffcc00; flex-shrink: 0;
+        }
+        .dt-pane-header .dot.connected { background: #00ff88; box-shadow: 0 0 4px #00ff88; }
+        .dt-pane-header .dot.error { background: #ff3388; box-shadow: 0 0 4px #ff3388; }
+        .dt-pane-header .dt-pane-id { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dt-pane-term { flex: 1; min-height: 0; padding: 2px; }
+        .dt-pane-term .xterm { height: 100% !important; }
+
         /* ---- MWIDE embed ---- */
         .mwide-frame-wrap {
             display: flex; flex-direction: column; height: 100%; background: #0d1117;
@@ -774,6 +812,7 @@
         <nav class="cb-nav" id="cb-nav" aria-label="ControlBoard pages">
             <button class="cb-nav-tab active" data-cb-page="governance" id="cb-tab-governance">Governance</button>
             <button class="cb-nav-tab" data-cb-page="terminals" id="cb-tab-terminals">Terminals</button>
+            <button class="cb-nav-tab" data-cb-page="dualterm" id="cb-tab-dualterm">Dual Terminal</button>
             <button class="cb-nav-tab" data-cb-page="workspace" id="cb-tab-workspace">Workspace</button>
             <button class="cb-nav-tab" data-cb-page="mwide" id="cb-tab-mwide">MWIDE</button>
             <button class="cb-nav-tab" data-cb-page="health" id="cb-tab-health">System Health</button>
@@ -845,6 +884,27 @@
             </div>
             <div class="tab-bar" id="tab-bar"></div>
             <div class="grid-container" id="grid-container"></div>
+        </div>
+
+        <!-- Page: Dual Terminal — port of the Floyd TTY Bridge sidepanel (Step 6) -->
+        <div class="cb-page" id="cb-page-dualterm" role="region" aria-labelledby="cb-tab-dualterm">
+            <div class="dt-wrap">
+                <div class="dt-toolbar">
+                    <strong>Dual Terminal</strong>
+                    <span style="opacity:0.6; font-size:0.78rem;">Floyd TTY Bridge — full-tab port</span>
+                    <span class="spacer" style="flex:1"></span>
+                    <span class="dt-layout-label">Layout:</span>
+                    <div class="dt-layout-toggle" role="group" aria-label="Terminal layout">
+                        <button class="btn btn-sm" data-dt-layout="single">Single</button>
+                        <button class="btn btn-sm active" data-dt-layout="dual">Dual</button>
+                        <button class="btn btn-sm" data-dt-layout="triple">Triple</button>
+                    </div>
+                    <button class="btn btn-sm" id="dt-respawn-btn" title="Kill and respawn all panes">↻ Reset</button>
+                </div>
+                <div class="dt-grid" id="dt-grid" data-layout="dual">
+                    <!-- Pane 1, 2, 3 frames are created by JS -->
+                </div>
+            </div>
         </div>
 
         <!-- Page 3: Workspace (Step 5 placeholder) -->
@@ -2342,6 +2402,7 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
         const pages = {
             governance: $('cb-page-governance'),
             terminals:  $('cb-page-terminals'),
+            dualterm:   $('cb-page-dualterm'),
             workspace:  $('cb-page-workspace'),
             mwide:      $('cb-page-mwide'),
             health:     $('cb-page-health'),
@@ -2361,6 +2422,7 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
             if (name === 'governance') refreshGovernance();
             if (name === 'health') refreshHealth();
             if (name === 'mwide') refreshMwide();
+            if (name === 'dualterm') initDualTerm();
         }
         navTabs.forEach(t => t.addEventListener('click', () => switchPage(t.dataset.cbPage)));
 
@@ -2739,6 +2801,178 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
             }
         }
         $('mwide-reload-btn').addEventListener('click', refreshMwide);
+
+        // ---- Dual Terminal (sidepanel port — Step 6) ----
+        const DT_LAYOUT_PANE_COUNT = { single: 1, dual: 2, triple: 3 };
+        const dtPanes = []; // [{agent_id, term, fitAddon, ws, container}]
+        let dtCurrentLayout = 'dual';
+        let dtInitialized = false;
+
+        async function dtSpawnAgent() {
+            const r = await fetch('/api/sidepanel/spawn', { method: 'POST' });
+            if (!r.ok) throw new Error('spawn failed: HTTP ' + r.status);
+            return await r.json();
+        }
+        async function dtDeleteAgent(agent_id) {
+            try {
+                await fetch('/api/sidepanel/' + encodeURIComponent(agent_id), { method: 'DELETE' });
+            } catch (e) { /* fire and forget */ }
+        }
+        function dtBuildPaneFrame(idx) {
+            const frame = document.createElement('div');
+            frame.className = 'dt-pane';
+            frame.dataset.dtIdx = String(idx);
+            frame.innerHTML = `
+                <div class="dt-pane-header">
+                    <span class="dot" data-role="status"></span>
+                    <span class="dt-pane-id" data-role="id">spawning…</span>
+                </div>
+                <div class="dt-pane-term" data-role="term"></div>`;
+            return frame;
+        }
+        async function dtAttachTerminalToPane(pane, frame) {
+            const termContainer = frame.querySelector('[data-role="term"]');
+            const statusDot = frame.querySelector('[data-role="status"]');
+            const idLabel = frame.querySelector('[data-role="id"]');
+            const term = new Terminal({
+                fontFamily: '"SF Mono", "Cascadia Code", "Fira Code", "Courier New", monospace',
+                fontSize: 13, cursorBlink: true,
+                theme: {
+                    background: '#0a0a0a', foreground: '#e0e0e0', cursor: '#00ff88',
+                    selectionBackground: 'rgba(0,255,136,0.2)',
+                },
+                scrollback: 5000, allowProposedApi: true,
+            });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(termContainer);
+            try { fitAddon.fit(); } catch {}
+
+            // Spawn the backend agent and open WebSocket
+            let info;
+            try {
+                info = await dtSpawnAgent();
+            } catch (e) {
+                statusDot.classList.add('error');
+                idLabel.textContent = 'spawn error: ' + e.message;
+                return null;
+            }
+            idLabel.textContent = info.name + ' · ' + info.shell;
+            const wsUrl = `ws://${location.host}/ws/${info.agent_id}`;
+            const ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+            ws.addEventListener('open', () => {
+                statusDot.classList.add('connected');
+                ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+            });
+            ws.addEventListener('close', () => {
+                statusDot.classList.remove('connected');
+                statusDot.classList.add('error');
+            });
+            ws.addEventListener('error', () => {
+                statusDot.classList.add('error');
+            });
+            ws.addEventListener('message', (ev) => {
+                // TCC protocol: status frames arrive as JSON text; PTY output arrives as binary bytes.
+                if (ev.data instanceof ArrayBuffer) {
+                    term.write(new Uint8Array(ev.data));
+                    return;
+                }
+                if (typeof ev.data === 'string') {
+                    // Most likely a {type: "status", ...} envelope — ignore unless error.
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        if (msg.type === 'status' && msg.status === 'error') {
+                            term.write('\r\n\x1b[31m[error] ' + (msg.message || 'unknown') + '\x1b[0m\r\n');
+                        }
+                    } catch {
+                        term.write(ev.data);
+                    }
+                }
+            });
+            term.onData(d => {
+                // Server treats non-resize text as raw input bytes — send d directly.
+                if (ws.readyState === WebSocket.OPEN) ws.send(d);
+            });
+            term.onResize(({ cols, rows }) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+                }
+            });
+            pane.agent_id = info.agent_id;
+            pane.term = term;
+            pane.fitAddon = fitAddon;
+            pane.ws = ws;
+            pane.frame = frame;
+            return pane;
+        }
+        async function dtSetLayout(layout) {
+            const want = DT_LAYOUT_PANE_COUNT[layout];
+            if (!want) return;
+            dtCurrentLayout = layout;
+            const grid = $('dt-grid');
+            grid.dataset.layout = layout;
+            // Update layout-toggle buttons
+            document.querySelectorAll('[data-dt-layout]').forEach(b => {
+                b.classList.toggle('active', b.dataset.dtLayout === layout);
+            });
+            // Add panes if needed (preserve existing panes' state — scrollback intact)
+            while (dtPanes.length < want) {
+                const idx = dtPanes.length;
+                const frame = dtBuildPaneFrame(idx);
+                grid.appendChild(frame);
+                const pane = {};
+                dtPanes.push(pane);
+                await dtAttachTerminalToPane(pane, frame);
+            }
+            // Hide / show panes — but keep them mounted to preserve state
+            for (let i = 0; i < dtPanes.length; i++) {
+                const p = dtPanes[i];
+                if (p.frame) p.frame.style.display = (i < want) ? 'flex' : 'none';
+            }
+            // Refit visible terminals
+            requestAnimationFrame(() => {
+                dtPanes.slice(0, want).forEach(p => {
+                    try { p.fitAddon && p.fitAddon.fit(); } catch {}
+                });
+            });
+        }
+        async function dtRespawnAll() {
+            for (const p of dtPanes) {
+                try { p.ws && p.ws.close(); } catch {}
+                if (p.agent_id) await dtDeleteAgent(p.agent_id);
+                if (p.frame) p.frame.remove();
+                if (p.term) try { p.term.dispose(); } catch {}
+            }
+            dtPanes.length = 0;
+            await dtSetLayout(dtCurrentLayout);
+        }
+        async function initDualTerm() {
+            if (dtInitialized) {
+                // Just refit on re-entry
+                dtPanes.forEach(p => { try { p.fitAddon && p.fitAddon.fit(); } catch {} });
+                return;
+            }
+            dtInitialized = true;
+            // Wire layout toggle buttons
+            document.querySelectorAll('[data-dt-layout]').forEach(b => {
+                b.addEventListener('click', () => dtSetLayout(b.dataset.dtLayout));
+            });
+            $('dt-respawn-btn').addEventListener('click', dtRespawnAll);
+            await dtSetLayout('dual');
+        }
+        // Best-effort cleanup of ephemeral agents on unload
+        window.addEventListener('beforeunload', () => {
+            dtPanes.forEach(p => {
+                if (p.agent_id) {
+                    try {
+                        navigator.sendBeacon &&
+                            navigator.sendBeacon('/api/sidepanel/' + encodeURIComponent(p.agent_id),
+                                                 new Blob([], { type: 'application/json' }));
+                    } catch {}
+                }
+            });
+        });
     })();
     </script>
 </body>
