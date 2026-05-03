@@ -1428,6 +1428,8 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
                         updateBulkBar();
                         return;
                     }
+                    const terminalsTab = document.getElementById('cb-tab-terminals');
+                    if (terminalsTab && !terminalsTab.classList.contains('active')) terminalsTab.click();
                     if (currentView === 'tabs') { activeTabId = id; applyView(); }
                     s.frame.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     s.term.focus();
@@ -1682,6 +1684,8 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
                     webgl.onContextLoss(() => { webgl.dispose(); });
                 }
             } catch (e) {}
+            const terminalContainer = document.getElementById(`term-${agent.id}`);
+            terminalContainer.addEventListener('click', () => term.focus());
             fitAddon.fit();
 
             // Bell handler — visual flash
@@ -1851,7 +1855,12 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
 
         // ---- Download output ----
         function downloadOutput(id) {
-            window.open(`/api/agents/${id}/scrollback`, '_blank');
+            const link = document.createElement('a');
+            link.href = `/api/agents/${id}/scrollback`;
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
         }
 
         // ---- Pin toggle ----
@@ -2390,6 +2399,8 @@ PORT=10602 pnpm dev   # or whatever the project's start command is</pre>
                 }
                 const agent = await res.json();
                 createFrame(agent);
+                const terminalsTab = document.getElementById('cb-tab-terminals');
+                if (terminalsTab && !terminalsTab.classList.contains('active')) terminalsTab.click();
                 e.target.reset();
                 // Reset cron fields
                 document.getElementById('agent-cron-type').value = '';

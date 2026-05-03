@@ -1,93 +1,132 @@
-# control-center — Legacy Agents ControlBoard FLOYD.md
+# Dashboard — FLOYD.md
+
 **Version:** 1.0.0
 **Initialized:** 2026-04-30
-**Governance:** .supercache/ v1.6.0
-**Forked from:** `/Volumes/SanDisk1Tb/terminal-control-center/` (rsync 2026-04-28; upstream remains untouched at port 9527)
+**Governance:** .supercache/ v1.6.2
+**Canonical SSOT:** `SSOT/control-center_SSOT.md`
+**Port:** 10527
+**Path:** `/Volumes/Storage/Legacy Agents/control-center/`
 
 ---
 
 ## Agent Contract
 
-You are working on **terminal-control-center**, a Legacy AI project.
+You are working on **Dashboard**, a Legacy AI project.
 
-### Before You Start
-1. Read this file completely.
-2. Read `.supercache/READONLY` — you MUST NOT write to .supercache/.
-3. Check `SSOT/README.md` for current project state.
-4. Check `Issues/README.md` for open issues.
+`FLOYD.md` is the project-governance entrypoint. The authoritative product architecture, integration rule, beta gates, remaining work, verification log, and supersession policy live in `SSOT/control-center_SSOT.md`.
 
-### Governance Location
-```
-.supercache/ → /Volumes/SanDisk1Tb/.supercache
-```
-
-This directory contains global templates, contracts, manifests, and routing config. It is **READ-ONLY**. Do not create, modify, or delete any file there.
-
-### Where You Write
-- `SSOT/` — project status, decisions, findings
-- `Issues/` — bugs, blockers, tasks
-- `.floyd/` — agent working state, session logs, runtime cache
-- Project source files — your actual work
-
-### Execution Contract
-Before claiming any task complete, provide:
-1. Exact action taken
-2. Direct evidence (file/line/command/output)
-3. Verification result
-4. Status only after proof
-
-See `.supercache/contracts/execution-contract.md` for full details.
-
-### Model Routing
-See `.supercache/manifests/model-routing.yaml` for which LLM to use for which task type.
-
-### Available Services
-See `.supercache/manifests/resource-manifest.yaml` for all available infrastructure.
+If this file conflicts with `SSOT/control-center_SSOT.md` on Dashboard product facts, the SSOT wins and this file must be corrected.
 
 ---
 
-## Project-Specific Context
+## Before You Start
 
-<!-- Add project-specific information below this line -->
-<!-- This section is the ONLY part of FLOYD.md that should be customized per project -->
+1. Read this file completely.
+2. Read `SSOT/control-center_SSOT.md` for the current Dashboard architecture and beta-release work.
+3. Read `Issues/control-center_ISSUES.md` for active blockers and sanitation records.
+4. Read `/Volumes/SanDisk1Tb/.supercache/READONLY` — never write to `.supercache/`.
+5. Read `/Volumes/SanDisk1Tb/.supercache/contracts/execution-contract.md`.
+6. Read `/Volumes/SanDisk1Tb/.supercache/contracts/document-management.md`.
+7. Read `/Volumes/SanDisk1Tb/.supercache/contracts/repo-sanitation.md`.
+8. Read `/Volumes/SanDisk1Tb/.supercache/contracts/git-discipline.md` before commits.
 
-**Purpose:** Legacy AI ControlBoard — 4-page operational dashboard surfacing every governed project on Douglas's drives, the daily bootstrap routine A→F, the 7 Beta-Readiness gates, the 6-project workspace, the large terminal surface, the MWIDE embed, and the Team Floyd Orchestrator dispatch points. Construction tracked at `/Volumes/Storage/Legacy Agents/plans/controlboard.md`. Vision at `/Volumes/Storage/Legacy Agents/plans/ROADMAP.md`.
+---
 
-**Tech Stack:** Python 3.14 / FastAPI / uvicorn / Pydantic / vanilla JS / xterm.js / WebSocket PTY (inherited from upstream TCC)
+## Project Identity
 
-**Key Files:**
-- `server.py` — FastAPI backend, PTY management, launchd integration, WebSocket terminals; this fork extends with `/api/projects`, `/api/quarantine-summary`, `/api/dispatch/bootstrap`, `/api/dispatch/finisher`, `/api/launch-cursem`
-- `index.html` — Zero-build frontend, xterm.js grid/tab layouts, command palette, drag-and-drop; this fork adds Governance / Workspace / Large Terminal / MWIDE views
-- `agents.json` — Persisted agent configurations (reset to `{}` for ControlBoard fresh start; upstream's CREATIVE/COMPLEX/SURGICAL/STABILITY agents stay on upstream TCC)
-- `Makefile` — venv, run, dev targets (inherited)
-- `docs/bootstrap-worker.md` — Bootstrap Worker prompt (Step 7 of controlboard plan)
-- `docs/finisher-orchestrator.md` — Team Floyd Orchestrator prompt (Step 11 of controlboard plan)
+| Field | Value |
+|---|---|
+| Name | Dashboard |
+| Purpose | One Legacy AI monoapplication that copies reusable source-app code into Dashboard-owned internal capabilities and drives projects toward beta readiness. |
+| Primary Language | Python + JavaScript |
+| Framework | FastAPI backend; zero-build vanilla JavaScript frontend |
+| Runtime | Python local runtime / uvicorn during development |
+| Port | 10527 |
+| Current Phase | Active construction toward beta |
 
-**Port:** 10527 (to be claimed in `/Volumes/SanDisk1Tb/SSOT/port-registry.json`; upstream TCC at 9527 untouched)
+---
 
-**Current Phase:** In construction (controlboard plan — Step 1 in progress 2026-04-30)
+## Product Rules
 
-**Theme default:** light (the failed DeepSeek prototype was dark; the redesign is intentionally light)
+| # | Rule | Rationale |
+|---|---|---|
+| D1 | Dashboard is one product, not a shell around old apps. | The beta target is one coherent monoapplication. |
+| D2 | Copy actual source-app code into Dashboard before adapting it. | The user builds modular apps for reuse; integration means pasted functional copy, not inspiration rewrite. |
+| D3 | Do not mutate original source applications to make Dashboard work. | Originals remain standalone products/modules. |
+| D4 | Do not treat iframe, adapter, or launcher as final integration. | Those are temporary migration bridges unless explicitly reclassified. |
+| D5 | Use Dashboard-native user-facing names/routes/ports. | Old app identities are provenance, not final product UI. |
+| D6 | Quarantine superseded docs; never delete. | Governance v1.6.x requires quarantine with WHY.md and LEDGER.jsonl. |
+| D7 | Beta completion requires observable app behavior, tests, and no-original-runtime dependency for copied modules. | Compiling or serving HTML is not enough. |
+
+---
+
+## Key Files
+
+| File | Purpose |
+|---|---|
+| `SSOT/control-center_SSOT.md` | Canonical Dashboard plan, architecture, beta gates, remaining work |
+| `Issues/control-center_ISSUES.md` | Dashboard issue and sanitation ledger |
+| `README.md` | Short entrypoint pointing readers to the SSOT |
+| `server.py` | FastAPI backend and runtime API surface |
+| `index.html` | Current zero-build frontend shell; must be normalized to Dashboard-native labels |
+| `scripts/` | Dashboard-owned automation and scanning tools |
+| `tests/` | Dashboard test suite |
+
+---
+
+## Build & Verify Commands
+
+Run from `control-center/`:
+
+| Action | Command | Expected Result |
+|---|---|---|
+| Create venv | `make venv` | Exit 0; `.venv/` exists |
+| Start app | `make run` | App listens on `http://localhost:10527/` |
+| Tests | `.venv/bin/python -m pytest -v` | Exit 0; tests pass |
+
+---
+
+## Source-App Boundary
+
+Original source applications are read/write only in their own explicit tasks. Dashboard integration work must copy code into Dashboard-owned paths, then adapt the copy.
+
+Source names may appear in provenance manifests, quarantine WHY files, and historical notes. They should not appear as final Dashboard product module names.
+
+---
+
+## Where You Write
+
+| Location | Purpose |
+|---|---|
+| `SSOT/` | Project truth, beta gates, verification log |
+| `Issues/` | Issues, blockers, sanitation ledger |
+| `.floyd/` | Agent working state, quarantine, runtime artifacts |
+| Source files | Dashboard implementation |
+
+Never write to `/Volumes/SanDisk1Tb/.supercache/`.
 
 ---
 
 ## Mandatory execution contract
+
 For EACH requested item:
-1) Show exact action taken
-2) Show direct evidence (file/line/command/output)
-3) Show verification result
-4) Mark status only after proof
+1. Show exact action taken
+2. Show direct evidence (file/line/command/output)
+3. Show verification result
+4. Mark status only after proof
 
 ## Forbidden behaviors
-- Declaring "done" without evidence
+- Declaring completion without evidence
 - Collapsing multiple requested items into one vague summary
 - Skipping failed steps without explicit blocker report
+- Deleting instead of quarantining
 
 ## Required output structure
 A) Requested items checklist
 B) Per-item evidence ledger
 C) Verification receipts
-D) Completeness matrix (item -> done/blocked -> evidence)
+D) Completeness matrix
+E) Quarantine ledger summary when quarantine occurred
 
 ## Hard gate
 If any requested item has no evidence row, final status MUST be INCOMPLETE.

@@ -67,11 +67,13 @@ def test_index_html_has_reload_button_and_external_link(client: TestClient) -> N
 
 
 def test_port_migration_diff_doc_exists() -> None:
-    """The doc that walks Douglas through the cross-project edits must ship."""
+    """The old MWIDE port-migration doc is inactive; Dashboard SSOT is canonical."""
     diff = ROOT / "docs" / "mwide-port-migration.md"
-    assert diff.is_file(), f"missing {diff}"
-    content = diff.read_text()
-    assert "10001" in content
-    assert "10602" in content
-    assert "{{PORT}}" in content
-    assert "port-registry.json" in content
+    assert not diff.exists()
+    ssot = ROOT / "SSOT" / "control-center_SSOT.md"
+    issues = ROOT / "Issues" / "control-center_ISSUES.md"
+    assert ssot.is_file()
+    assert issues.is_file()
+    content = ssot.read_text()
+    assert "Copy actual MWIDE source into Dashboard" in content or "Copy” means copy/paste actual code into Dashboard first" in content
+    assert "ISSUE-0001" in issues.read_text()

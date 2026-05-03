@@ -80,9 +80,12 @@ def test_refresh_script_present() -> None:
 
 
 def test_docs_present() -> None:
-    """The vendoring policy doc is part of the project."""
+    """The old vendoring doc is inactive; Dashboard SSOT is canonical."""
     doc = ROOT / "docs" / "infrastructure-map.md"
-    assert doc.is_file()
-    body = doc.read_text()
-    assert "Vendoring policy" in body
-    assert "refresh-infrastructure-map.sh" in body
+    assert not doc.exists()
+    ssot = ROOT / "SSOT" / "control-center_SSOT.md"
+    issues = ROOT / "Issues" / "control-center_ISSUES.md"
+    assert ssot.is_file()
+    assert issues.is_file()
+    assert "System Map" in ssot.read_text()
+    assert "ISSUE-0001" in issues.read_text()
