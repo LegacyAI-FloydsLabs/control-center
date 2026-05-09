@@ -1,101 +1,61 @@
 # The Kernel — Release Manifest
 
-## Or: What We Built While The Cats Were Asleep On The Keyboard
-
-**DOCUMENT CLASSIFICATION:** Release Announcement / Maximum Caffeine
-**DATE RECORDED:** 2026-05-09 — Way Too Late At Night
-**LOCATION:** The Garage, Brown County, Indiana
-**BEVERAGE:** Coffee that tastes like motor oil (third pot)
-**CURRENT STATE:** Caffeinated And Opinionated
+## Or: The Announcement You Didn't Ask For But Definitely Deserve
 
 ---
 
-This is the release manifest for the Kernel — the monoapplication that replaced a drawer full of disconnected tools with one command surface that actually works.
+Somewhere in Brown County, Indiana, at a hour that would concern a doctor, a guy in a garage finished wiring seven separate applications into one command surface and decided it was ready to exist in public.
 
-We didn't raise money. We didn't form a committee. We didn't write a mission statement and then hire someone to execute it. We built a thing in a garage because the things that existed weren't good enough, and spite is a perfectly valid engineering motivation.
+This is that thing.
 
----
+Floyd's Unified Command Kernel. One FastAPI application. Python backend. Vanilla JavaScript frontend. Zero build steps. 195 tests, all green. Eleven tabs covering the full Legacy AI capability stack. No venture capital. No board of directors. No mission statement that was written by committee and approved by fear.
 
-## The Product
-
-One FastAPI application on port 10527. Python backend. Zero-build vanilla JavaScript frontend. No bundler config. No dependency tree that looks like a conspiracy wall. It runs, it serves, it tests, it ships.
-
-Every Legacy AI capability — terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — lives inside this monorepo as copied-and-adapted internal modules. The originals stay standalone. We copy code because that's what integration actually means when you're not trying to sell someone an integration platform.
+Just a tool that works, built by someone who was annoyed that the existing tools didn't.
 
 ---
 
-## What's In The Box
+## What's Actually In Here
 
-### 11 Navigation Tabs
-One surface. Every tool. No alt-tabbing between five browser windows like some kind of digital janitor.
+**11 navigation tabs** — one surface for terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance, and four other things that each deserve their own sentence but collectively add up to "you don't need six browser windows anymore."
 
-### 4 WebSocket Endpoints
-Real PTY streaming. Real-time document sync. Session lifecycle events. Agent terminal multiplexing. The plumbing works.
+**4 WebSocket endpoints** — real PTY streaming, real-time document sync, session lifecycle events, agent terminal multiplexing. The pipes are real. The data flows. Nothing is simulated.
 
-### 30+ REST API Routes
-Governance, filesystem, vault, agent actions, health, LLM proxy, git proxy. The whole backend surface, documented and tested.
+**30+ REST API routes** — governance, filesystem, vault, agent actions, health, LLM proxy, git proxy. The backend surface is complete, documented, and tested.
 
-### 195 Tests
-They all pass. Not "mostly pass." Not "pass on my machine." They pass. That's the bar, and we cleared it.
+**195 tests** — they pass. Not "on my machine." Not "with the right environment variables." They pass. This is the bar, and the bar was cleared.
 
-### Agent Execution (ATerm)
-9 live PTY-backed actions: create sessions, start terminals, send input, read output, stop processes, take notes. The full agent terminal lifecycle, backed by real PTY processes, not simulated garbage.
+**9 live ATerm actions** — create, start, run, read, stop, cancel, delete, list, note. Real PTY processes. Real sessions. Real output flowing through real WebSockets.
 
-### Workspace Editor (MWIDE)
-Full code editor injected directly into the Kernel DOM. Not in an iframe. Not in a popup. In the application. Where it belongs.
+**A full workspace editor** — MWIDE source, copied in, injected directly into the Kernel DOM. Not an iframe. Not a popup. Part of the application.
 
-### Theme System
-Tokyo Night dark theme. CSS custom properties. Runtime switching. The title letters cycle colors because we earned that much self-indulgence and Bella walked across the keyboard during the CSS review and honestly it looked better after.
+**Tokyo Night dark theme** — because staring at a white screen at 2:47 AM is how you go from "productive" to "questioning your life choices." The title letters cycle colors because Bella walked across the keyboard during CSS review and it looked better after.
 
-### WCAG AA Compliance
-Contrast ratios checked. Keyboard navigation works. ARIA labels present. Accessibility isn't a checkbox exercise — it's how you build things that don't exclude people.
+**WCAG AA compliance** — contrast ratios, keyboard navigation, ARIA labels. Accessibility isn't a feature checkbox. It's how you build things that don't exclude people. The cats approve. They'd tell you if they didn't.
 
 ---
 
-## The Architecture
-
-One application. Not microservices. Not a service mesh. Not twelve containers communicating through a message queue that nobody can debug at 3 AM when it inevitably breaks.
+## The Architecture In One Line
 
 ```
-FastAPI backend → vanilla JS frontend → 11 tabs → done
+FastAPI → vanilla JS → 11 tabs → done
 ```
 
-If you need a whiteboard diagram to understand the architecture, the architecture is wrong.
+If you need a whiteboard to explain your architecture, the architecture is the problem.
 
 ---
 
-## The Testimony Of The Numbers
+## The Honest Part
 
-| Metric | Value |
-|---|---|
-| Python lines (core) | 11,599 |
-| Tests | 195 |
-| WebSocket endpoints | 4 |
-| REST routes | 30+ |
-| ATerm live actions | 9 |
-| ATerm stub actions | 10 (documented, not hidden) |
-| Nav tabs | 11 |
-| Build steps | 0 |
-| npm packages required | 0 |
-| Docker containers | 0 |
-| YAML files | 0 |
-| Stand-up meetings held | 0 |
-| Times someone said "let's take this offline" | 0 |
+Not everything is live. We're not going to pretend otherwise:
 
----
+- **ATerm broadcast/search/history** — handlers exist, return placeholders. Plumbing's in. Logic isn't.
+- **ATerm MCP server** — lives in source code. Not wired yet.
+- **ATerm bridge** — same story. Code exists, not connected.
+- **Collab WebSocket UI** — backend works, frontend code is there, nobody wired them together. The pipe works. Nobody's turned on the faucet.
+- **Workspace Editor pty-hub** — frontend is fully copied. The workspace-aware terminal backend isn't.
+- **Bootstrap/Finisher** — endpoints exist. Integration testing hasn't happened yet.
 
-## What's Dormant (And We're Honest About It)
-
-Not everything is live. We're not going to pretend stubs are features and hope nobody notices:
-
-- **ATerm broadcast/search/history** — handlers exist, return placeholder data. The plumbing's there; the logic isn't.
-- **ATerm MCP server** — exists in source, not wired into the Kernel.
-- **ATerm bridge (anvil-client)** — exists in source, not copied into the module.
-- **Collab WebSocket UI** — backend is live, frontend code exists, nobody's wired them together yet. The pipe works. Nobody's turned on the faucet.
-- **Workspace Editor pty-hub** — MWIDE frontend is copied, the full workspace-aware terminal backend isn't.
-- **Bootstrap/Finisher verification** — endpoints exist, integration testing pending.
-
-We document what doesn't work. That's how trust works.
+We document what doesn't work. Because hiding stubs behind marketing language is how you lose trust, and trust is all you have when you're building in a garage with no PR department.
 
 ---
 
@@ -106,34 +66,32 @@ make venv
 make run
 ```
 
-Open `http://localhost:10527/`. Done. If you need more steps than that, the problem isn't the software.
+Open `http://localhost:10527/`. If you need more than two commands to start a development tool, someone is overcomplicating your life on purpose.
 
 ---
 
-## Who Built This
+## The Byline
 
-Floyd's Labs. A garage in Brown County, Indiana. Founded by Douglas Talley, who was building robots while other kids had Transformers.
+Floyd's Labs. Brown County, Indiana. Founded by Douglas Talley, who was building robots while other kids had Transformers and has never recovered from the impulse.
 
-QA Director: Bella. A black cat of substantial carriage who walks on keyboards and has never once filed a false-positive bug report.
+Bella — QA Director. Substantial. Authoritative. Walks on keyboards during deploys and has an unexplained ability to break things that shouldn't be breakable.
 
-Technical Director: Bowser. A skinny black cat who monitors the router and judges your latency.
+Bowser — Technical Director. Skinny. Router-adjacent. Latency- judgmental. Understands infrastructure on a level that concerns everyone.
 
-Neither of them has ever used the word "stakeholder." Neither of them knows what an acronym is. They're cats.
+Neither has ever said "stakeholder." Neither has ever approved a scope change. They're cats. That's the whole organizational chart.
 
 ---
 
 ┌──────────────────────────────────────────────────────────┐
-│  DOCUMENT METADATA                                        │
+│  RELEASE METADATA                                          │
 ├──────────────────────────────────────────────────────────┤
-│  Classification:   Release Manifest                       │
-│  Cat Supervision:  Bella (QA) + Bowser (Networking)       │
-│  Corporate Feelings: HURT (intended)                      │
-│  VC Interest:       NONE (preferred)                      │
-│  Garage Temperature: Questionable                          │
+│  Lines of Python:    11,599                                │
+│  Tests:              195 (all green)                       │
+│  Build Steps:        0                                     │
+│  Docker Containers:  0                                     │
+│  npm Packages:       0                                     │
+│  VC Funding:         $0                                    │
+│  Meetings Held:      0                                     │
+│  Cats Involved:      2                                     │
+│  Regrets:            None so far                           │
 └──────────────────────────────────────────────────────────┘
-
-**DOCUMENT ENDS**
-
-*— The Garage Desk*
-*Floyd's Labs — Brown County, Indiana*
-*"195 tests pass at 2:47 AM. That's the whole press release."*

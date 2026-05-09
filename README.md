@@ -2,56 +2,54 @@
 
 ![Floyd's Unified Command Kernel](FloydsUnifiedCommandKernel.jpeg)
 
-*One command surface. Every Legacy AI capability wired into it. Built in a garage because the existing options annoyed us.*
+---
+
+Here's the situation.
+
+Douglas had a terminal app. And a workspace editor. And an agent runner. And a system health monitor. And an infrastructure mapper. And a project governance dashboard. Each one worked fine on its own. Each one had its own port, its own window, its own personality disorder.
+
+Opening all of them at once looked like a crime scene on a monitor. Six browser tabs, four localhost ports, and the distinct feeling that something built by one person in a garage should probably not require a doctoral degree in window management just to check if an agent was still running.
+
+So he built one thing.
+
+The Kernel is that thing. One FastAPI backend on port 10527. One zero-build vanilla JavaScript frontend. Eleven tabs. Every capability copied in, adapted, and owned by one application. The originals still exist as standalone products — the Kernel just absorbed their code like a particularly opinionated amoeba.
+
+It runs in a garage in Brown County, Indiana. Bella walks on the keyboard during code reviews. Bowser stares at the router like it owes him money. Neither of them has ever once asked whether we should "leverage our synergies across the platform ecosystem."
+
+The initials stand for Floyd's Unified Command Kernel. If you think they stand for anything else, that's a you problem. Bella is already judging you for it.
 
 ---
 
-**DOCUMENT CLASSIFICATION:** README / Anti-Corporate
-**DATE RECORDED:** 2026-05-09 — Probably Past Bedtime
-**LOCATION:** The Garage, Brown County, Indiana
-**BEVERAGE:** Coffee that tastes like a lawnmower's opinion
-**CURRENT STATE:** Caffeinated
+## The Stack
 
----
-
-## What This Thing Is
-
-The Kernel is not a shell. It's not a launcher. It's not a collection of iframes wearing a trench coat and pretending to be integrated.
-
-It is **one application**. Terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — all copied in, all adapted, all owned by the Kernel. The originals stay standalone and untouched because that's how reuse actually works.
-
-Some people think the initials mean something. Those people need to get their minds out of the gutter. It stands for Floyd's Unified Command Kernel. That's it. Nothing else. Stop snickering. Bella is judging you.
-
----
-
-## What You're Looking At
-
-- **Backend:** FastAPI (Python 3.14)
-- **Frontend:** Zero-build vanilla JavaScript — no bundler, no npm install, no three-hour webpack config that breaks on Tuesdays
+- **Backend:** FastAPI on Python 3.14
+- **Frontend:** Vanilla JavaScript — zero build, zero bundler, zero npm horrors
 - **Port:** 10527
-- **Tests:** 195 of them, and they all pass
-- **Tabs:** 11 nav surfaces covering the full Legacy AI stack
+- **Tests:** 195. All green.
+- **Cats supervising:** 2
 
 ---
 
-## Get It Running
+## Running It
 
 ```bash
 make venv
 make run
 ```
 
-Then open `http://localhost:10527/`. That's it. No Docker, no Kubernetes manifest, no YAML file written by someone who describes themselves as a "cloud evangelist."
+Then hit `http://localhost:10527/`.
+
+That's the whole setup. Two commands. If you need a Docker container, a Helm chart, and a prayer circle to start a development tool, someone sold you a lifestyle, not software.
 
 ---
 
-## Make Sure It Works
+## Verifying It
 
 ```bash
 .venv/bin/python -m pytest -v
 ```
 
-195 tests should pass. A few workflow tests want Playwright browsers — run `.venv/bin/playwright install` if you care about those.
+195 tests pass. If they don't, something went sideways and the test suite will tell you exactly what. Some workflow tests want Playwright — run `.venv/bin/playwright install` for those.
 
 ---
 
@@ -59,58 +57,58 @@ Then open `http://localhost:10527/`. That's it. No Docker, no Kubernetes manifes
 
 | Tab | What It Does |
 |---|---|
-| Project Control | Governance dashboard — scan projects, quarantine garbage, tag things |
-| Terminal Console | Real PTY over WebSocket, xterm.js rendering |
-| Dual Console | Two terminals, because one is never enough |
-| Workspace | File browser for your filesystem |
-| Workspace Editor | MWIDE-based code editor, injected directly into the DOM |
-| System Health | What's broken and why |
-| System Map | Infrastructure cartography in a Shadow DOM |
-| Agent Execution | ATerm-powered agent terminals with PTY lifecycle |
-| Dev Launcher | Launch development tools (iframe, because it's a self-contained Vite SPA) |
-| Spend Watch | Track where the money goes |
-| Mac Cleanup | System cleanup reports |
+| Project Control | Scan projects, quarantine the ones lying to you, tag everything |
+| Terminal Console | Real PTY over WebSocket, xterm.js, actual terminal things |
+| Dual Console | Two terminals side by side. Because obviously. |
+| Workspace | Browse your filesystem without leaving the browser |
+| Workspace Editor | Full code editor. Injected into the DOM. Not in a sad iframe. |
+| System Health | What's broken, why it's broken, and how long it's been broken |
+| System Map | Infrastructure cartography. Yes, that's a real thing now. |
+| Agent Execution | ATerm-powered agent terminals. Real PTY. Real sessions. Real output. |
+| Dev Launcher | Launch dev tools. Lives in an iframe because it has commitment issues. |
+| Spend Watch | Where did the money go. |
+| Mac Cleanup | Cleanup reports for when the disk fills up with mysteries. |
 
 ---
 
-## Architecture Rules We Actually Follow
+## The Rules
 
-1. **The Kernel is one product.** Old app names are provenance, not product labels.
-2. **Source apps get copied in, then adapted.** Not rewritten from memory like a bad book report.
-3. **Original source apps stay untouched.** They're standalone products.
-4. **Iframes are for self-contained SPAs only.** Everything else gets direct DOM injection.
-5. **All routes, ports, and names are Kernel-native.** No legacy cruft in the URL bar.
+1. **One product.** Not six apps holding hands. One.
+2. **Copy real code in.** Not rewritten from memory like a midterm essay.
+3. **Don't touch the originals.** They're standalone products. The Kernel borrows. It doesn't steal.
+4. **Iframes only when necessary.** Some things need DOM isolation. Most things don't.
+5. **Everything is Kernel-native.** Routes, ports, names. No archaeology required.
 
 ---
 
 ## The Docs
 
-| Document | Purpose |
+| File | Why It Exists |
 |---|---|
-| `control-center/SSOT/control-center_SSOT.md` | The source of truth — read this before changing anything |
-| `control-center/docs/FEATURES.md` | Every feature, active and dormant, with technical detail |
-| `CHANGELOG.md` | What shipped and when |
-| `control-center/docs/RELEASE.md` | Release manifest |
+| `control-center/SSOT/control-center_SSOT.md` | The source of truth. Read it first or don't complain when things don't make sense. |
+| `control-center/docs/FEATURES.md` | Every feature — live and dormant — with full technical detail. The serious doc. |
+| `CHANGELOG.md` | What shipped, when, and why. |
+| `control-center/docs/RELEASE.md` | Release manifest. |
 
 ---
 
 ## The Cats
 
-Floyd's Labs is a garage in Brown County, Indiana. We answer to cats, not shareholders.
+**Bella** — QA Director. Substantial carriage. Walks on keyboards during critical deploys. Has never filed a false positive. Files many true positives, usually at 3 AM, usually by sitting on the escape key.
 
-- **Bella** — Senior Quality Assurance. A black cat of substantial carriage who walks on keyboards and has never filed a false-positive bug report.
-- **Bowser** — Technical Director. Skinny. Monitors the router. Judges your latency.
+**Bowser** — Technical Director. Suspiciously competent for someone who weighs nine pounds. Monitors the router. Judges latency. Has opinions about DNS that he cannot articulate but absolutely communicates through staring.
 
-Neither of them has ever said "let's circle back on the naming convention." Neither of them knows what an acronym is. They're cats.
+Both of them were asleep on the desk when 195 tests went green. Neither of them cared. That's the correct response.
 
 ---
 
 ┌──────────────────────────────────────────────────────────┐
-│  DOCUMENT METADATA                                        │
+│  BUILT IN A GARAGE, NOT A BOARDROOM                       │
 ├──────────────────────────────────────────────────────────┤
-│  Classification:   README                                  │
-│  Cat Supervision:  Bella (QA) and Bowser (Networking)     │
-│  Lines of Code:    11,599 Python + whole lotta TypeScript │
-│  Corporate Feelings: HURT (intended)                       │
-│  Acronym Meaning:   Floyd's Unified Command Kernel ONLY   │
+│  Location:    Brown County, Indiana                       │
+│  Funding:     $0 and a dream                              │
+│  Meetings:    None that weren't with cats                 │
+│  Standups:    Bella sat on the keyboard. That counts.     │
+│  Coffee:      Motor oil adjacent                          │
+│  Ship Status: 195 tests green. We sleep eventually.       │
 └──────────────────────────────────────────────────────────┘

@@ -1,26 +1,18 @@
 # Changelog
 
-## Or: The Paper Trail The Cats Didn't Walk On
+---
 
-**DOCUMENT CLASSIFICATION:** Release History / Caffeinated
-**LOCATION:** The Garage, Brown County, Indiana
-**CURRENT STATE:** Still Shipping
+This is the paper trail. Every commit that mattered, in order, with the context that git logs don't give you.
+
+The format is simple: what happened, when, and why. No version number theater. No "we're thrilled to announce." Just the record of a garage that kept shipping.
 
 ---
 
-All notable changes to the Kernel are documented here. Dates are real. Commit hashes are real. The tone is what happens when you write release notes at 2:47 AM.
-
-The format is: what happened, when it happened, and why it happened. No semantic versioning theater. No "we're thrilled to announce." Just the record.
-
----
-
-## [2026-05-09] — Terminal Isolation Fix
+## [2026-05-09] — Terminal Pane Isolation
 
 **Commit:** `f650db2`
 
-Terminal panes were sharing input state. You typed in one, it showed up in another. That's not a feature — that's a bug wearing a convincing disguise.
-
-**Fix:** Isolated pane input so each terminal owns its own stdin. One pane, one pipe. The way terminals are supposed to work.
+Terminal panes were sharing input. You typed in one, characters appeared in another. This is not a feature. This is a haunting. Fixed it so each pane owns its own stdin. One terminal, one pipe. Ghosts exorcised.
 
 ---
 
@@ -28,100 +20,100 @@ Terminal panes were sharing input state. You typed in one, it showed up in anoth
 
 **Commit:** `afd2855`
 
-The Kernel looked fine on a desktop and like a crime scene on a phone. Three breakpoints later — mobile, tablet, desktop — it works everywhere a browser renders. Sidebar collapses. Content reflows. No one had to say "mobile-first" in a meeting.
+The Kernel looked great on a monitor and like a ransom note on a phone. Three breakpoints later — mobile, tablet, desktop — it works everywhere. Sidebar collapses. Content reflows. Nobody had to say "mobile-first strategy" out loud, which means we all won.
 
 ---
 
-## [2026-05-09] — Beta 1–8 Merge
+## [2026-05-09] — The Big Merge: Beta 1–8
 
 **Commit:** `f9418aa` (merge), `c7daac1` (source)
 
-The big one. Eight beta milestones merged into a single coherent commit:
+Eight milestones. One commit. Here's what landed:
 
-- **11 navigation tabs** — full Legacy AI stack under one surface
-- **WCAG AA compliance** — contrast ratios checked, keyboard navigation working, ARIA labels present
-- **Theme system** — Tokyo Night dark theme with CSS custom properties and runtime switching
-- **179 tests passing** — WebSocket behavioral tests, ATerm PTY lifecycle, MWIDE API coverage, governance tests
-- **Agent Execution module** — ATerm source copied in, PTY-backed agent terminals with create/start/run/read/stop/delete
-- **Workspace Editor module** — MWIDE source copied in, dynamic script injection (no iframes)
-- **System Map** — infrastructure cartography in Shadow DOM isolation
-- **Dev Launcher, Spend Watch, Mac Cleanup** — three self-contained tools via iframe (the acceptable kind)
+- **11 tabs** — the full Legacy AI stack under one roof
+- **WCAG AA** — contrast checked, keyboard nav working, ARIA present
+- **Theme system** — Tokyo Night dark theme with CSS custom properties
+- **179 tests** — WebSocket tests, PTY lifecycle, API coverage, governance
+- **Agent Execution** — ATerm source copied in, real PTY-backed terminals
+- **Workspace Editor** — MWIDE source copied in, DOM injection, no iframe
+- **System Map** — infrastructure cartography in Shadow DOM
+- **Dev Launcher, Spend Watch, Mac Cleanup** — three standalone tools, iframe-wrapped
+
+This is the commit where it stopped being a collection of features and started being a product.
 
 ---
 
-## [2026-05-05] — Unified App Plan
+## [2026-05-05] — The Unified App Plan
 
 **Commit:** `9a982d3`
 
-Codified the plan to make the ControlBoard into a single monoapplication. This is the commit where the Kernel stopped being a dashboard and started being a product.
+The moment the Kernel stopped being a dashboard and started being an application. Someone wrote down "what if it was just one thing" and then built the one thing. Revolutionary concept in some circles.
 
 ---
 
-## [2026-05-04] — Steps 5 & 6: Workspace + Dual Terminal
+## [2026-05-04] — Workspace + Dual Terminal
 
 **Commits:** `e249de5`, `3dd12e2`
 
-**Step 5:** Six-project workspace. Multiple projects visible at once, because context-switching is for people who don't have enough monitors.
+**Six-project workspace.** Multiple projects visible at once, because humans with two monitors shouldn't need a third just to see what's running.
 
-**Step 6:** Dual terminal tab. Two PTY sessions side by side, because one terminal is a tragedy.
+**Dual terminal.** Two PTY sessions side by side. Some problems are solved by adding a second terminal. Most problems, actually.
 
 ---
 
-## [2026-05-04] — Steps 9, 12, 13: MWIDE, System Health, Infra Map
+## [2026-05-04] — MWIDE, System Health, Infrastructure Map
 
 **Commits:** `08b20d0`, `66a794a`, `7812941`
 
-**Step 9:** MWIDE workspace editor embedded. Not in a sad little iframe — injected into the DOM like it belongs there (because it does).
+**Workspace editor** embedded. Not in a sad iframe — injected into the DOM where it belongs.
 
-**Step 12:** Mac system health. Live cleanup reports. The truth about what's eating your disk space.
+**Mac system health.** Live cleanup reports. The disk space truth nobody wants to hear.
 
-**Step 13:** Infrastructure cartography. A map of what's running where, because guessing is not a deployment strategy.
+**Infrastructure cartography.** A map of what's running where. Guessing is not a deployment strategy and never was.
 
 ---
 
-## [2026-05-03] — Step 4: Governance Dashboard
+## [2026-05-03] — Governance Dashboard
 
 **Commit:** `a62f7cf`
 
-The governance dashboard. Scan projects, quarantine the ones that are lying to you, tag everything. The bureaucratic backbone, built by people who hate bureaucracy.
+Scan projects. Quarantine the ones that are lying. Tag everything so you can find it later. Bureaucracy, built by people who hate bureaucracy, which means it actually works.
 
 ---
 
-## [2026-05-03] — Step 3: Repository Reporter
+## [2026-05-03] — Repository Reporter
 
 **Commit:** `bd492e3`
 
-Automated repository reporting with 13 tests. The machine checks itself. That's not laziness — that's engineering.
+Automated repository reporting. 13 tests. The machine checks itself because asking nicely doesn't scale.
 
 ---
 
-## [2026-05-03] — Steps 1–2: Initialization
+## [2026-05-03] — The Beginning
 
 **Commits:** `b50ffa8`, `4c35765`
 
-The ControlBoard was born. A plan was written. Directories were created. The cats were unimpressed but monitoring closely.
+Directories were created. A plan was written. The cats were unimpressed but monitored closely. Every project starts somewhere. This one started with a `mkdir` and a grudge.
 
 ---
 
-## The Numbers (As Of 2026-05-09)
+## The Scoreboard
 
 | Metric | Count |
 |---|---|
 | Tests | 195 |
 | Test files | 22 |
-| Python lines (core) | 11,599 |
+| Python lines | 11,599 |
 | Nav tabs | 11 |
 | WebSocket endpoints | 4 |
-| REST API routes | 30+ |
-| ATerm actions (live) | 9 |
-| ATerm actions (stub) | 10 |
-| Cats supervising | 2 |
-| VC funding | $0 |
+| REST routes | 30+ |
+| Live ATerm actions | 9 |
+| Stub ATerm actions | 10 |
+| Times "synergy" appeared | 0 |
 | Board meetings | 0 |
-| Times we said "synergy" | 0 |
+| VC funding | $0 |
 
 ---
 
-*— The Garage Desk*
-*Floyd's Labs — Brown County, Indiana*
-*"We shipped 195 tests and all we got was this lousy changelog."*
+*— Floyd's Labs, Brown County, Indiana*
+*"We shipped 195 passing tests and all we got was this changelog."*
