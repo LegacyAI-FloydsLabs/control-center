@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+ui/node_modules/
+
+# Build output
+dist/
+ui/dist/
+
+# Runtime artifacts
+.aterm-token
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Media (delivered artifacts go to Floyd Docs, not the repo)
+*.mp3
+*.mp4
+*.wav
+
+# Test artifacts
+test-screenshots/
+
+# Agent scratch
+.floyd/
+
+# Agent research/docs (session artifacts, not project source)
+Floyd Docs/

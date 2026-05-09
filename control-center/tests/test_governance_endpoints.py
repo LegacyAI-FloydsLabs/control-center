@@ -1,6 +1,6 @@
-"""Tests for ControlBoard Governance Dashboard endpoints.
+"""Tests for Kernel Project Control endpoints.
 
-Authority: plans/controlboard.md Step 4
+Authority: SSOT/control-center_SSOT.md § Project Control
 Endpoints under test:
   GET /api/projects              — project list with status + report
   GET /api/quarantine-summary    — aggregate quarantine state
@@ -74,7 +74,9 @@ def _make_project(
 
 
 @pytest.fixture
-def synthetic_drives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+def synthetic_drives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path]:
     """Two synthetic drives with multiple projects across statuses."""
     drive_a = tmp_path / "DriveA"
     drive_b = tmp_path / "DriveB"
@@ -83,9 +85,11 @@ def synthetic_drives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[P
 
     # GOVERNED: report exists with recent _last_verified
     from datetime import datetime, timezone, timedelta
+
     recent = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
     _make_project(
-        drive_a, "alpha-governed",
+        drive_a,
+        "alpha-governed",
         report={
             "project_name": "alpha-governed",
             "completion_percentage": 86,
@@ -101,12 +105,20 @@ def synthetic_drives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[P
             "risks": ["tech debt"],
             "technical_debt": "low",
             "gate_statuses": {
-                "build_run": "PASS", "primary_journey": "PASS", "automated_tests": "PASS",
-                "e2e_tests": "PASS", "multi_min_human_sim": "UNKNOWN",
-                "security": "PASS", "demo": "PASS",
+                "build_run": "PASS",
+                "primary_journey": "PASS",
+                "automated_tests": "PASS",
+                "e2e_tests": "PASS",
+                "multi_min_human_sim": "UNKNOWN",
+                "security": "PASS",
+                "demo": "PASS",
             },
-            "_evidence": {}, "_critic_notes": [], "_verified": True,
-            "_critic_rounds": 3, "_last_verified": recent, "_verified_by": "test",
+            "_evidence": {},
+            "_critic_notes": [],
+            "_verified": True,
+            "_critic_rounds": 3,
+            "_last_verified": recent,
+            "_verified_by": "test",
         },
         stamp_version="1.6.0",
     )
@@ -117,7 +129,8 @@ def synthetic_drives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[P
     # CANDIDATE: report exists but _last_verified is stale (>7 days)
     stale = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
     _make_project(
-        drive_b, "charlie-stale",
+        drive_b,
+        "charlie-stale",
         report={
             "project_name": "charlie-stale",
             "completion_percentage": 14,
@@ -132,27 +145,44 @@ def synthetic_drives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[P
             "key_features": [],
             "risks": [],
             "technical_debt": "unknown",
-            "gate_statuses": {g: "UNKNOWN" for g in [
-                "build_run","primary_journey","automated_tests","e2e_tests",
-                "multi_min_human_sim","security","demo"
-            ]},
-            "_evidence": {}, "_critic_notes": [], "_verified": False,
-            "_critic_rounds": 1, "_last_verified": stale, "_verified_by": "test",
+            "gate_statuses": {
+                g: "UNKNOWN"
+                for g in [
+                    "build_run",
+                    "primary_journey",
+                    "automated_tests",
+                    "e2e_tests",
+                    "multi_min_human_sim",
+                    "security",
+                    "demo",
+                ]
+            },
+            "_evidence": {},
+            "_critic_notes": [],
+            "_verified": False,
+            "_critic_rounds": 1,
+            "_last_verified": stale,
+            "_verified_by": "test",
         },
     )
 
     # DRIFTED: stamp version doesn't match canonical
     _make_project(
-        drive_b, "delta-drifted",
+        drive_b,
+        "delta-drifted",
         stamp_version="1.4.0",  # canonical patched below to "1.6.0"
     )
 
     # Project with a quarantine entry (counts toward quarantine summary only)
     _make_project(
-        drive_b, "echo-quarantined",
+        drive_b,
+        "echo-quarantined",
         quarantine_files=[
             ("2026-04-30", "removed-file.txt"),
-            ("2026-04-30", "WHY.md"),  # not counted in scan logic (no .WHY.md suffix here)
+            (
+                "2026-04-30",
+                "WHY.md",
+            ),  # not counted in scan logic (no .WHY.md suffix here)
         ],
     )
 
@@ -167,7 +197,10 @@ def synthetic_drives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[P
 # /api/projects
 # ---------------------------------------------------------------------------
 
-def test_projects_endpoint_returns_canonical_version(client: TestClient, synthetic_drives) -> None:
+
+def test_projects_endpoint_returns_canonical_version(
+    client: TestClient, synthetic_drives
+) -> None:
     resp = client.get("/api/projects")
     assert resp.status_code == 200
     j = resp.json()
@@ -176,13 +209,23 @@ def test_projects_endpoint_returns_canonical_version(client: TestClient, synthet
     assert j["cached"] is False
 
 
-def test_projects_endpoint_lists_all_synthetic_projects(client: TestClient, synthetic_drives) -> None:
+def test_projects_endpoint_lists_all_synthetic_projects(
+    client: TestClient, synthetic_drives
+) -> None:
     j = client.get("/api/projects").json()
     names = {p["name"] for p in j["projects"]}
-    assert names == {"alpha-governed", "bravo-candidate", "charlie-stale", "delta-drifted", "echo-quarantined"}
+    assert names == {
+        "alpha-governed",
+        "bravo-candidate",
+        "charlie-stale",
+        "delta-drifted",
+        "echo-quarantined",
+    }
 
 
-def test_projects_endpoint_status_classification(client: TestClient, synthetic_drives) -> None:
+def test_projects_endpoint_status_classification(
+    client: TestClient, synthetic_drives
+) -> None:
     j = client.get("/api/projects").json()
     by_name = {p["name"]: p for p in j["projects"]}
     assert by_name["alpha-governed"]["status"] == "GOVERNED"
@@ -191,7 +234,9 @@ def test_projects_endpoint_status_classification(client: TestClient, synthetic_d
     assert by_name["delta-drifted"]["status"] == "DRIFTED"
 
 
-def test_projects_endpoint_sort_completion_desc(client: TestClient, synthetic_drives) -> None:
+def test_projects_endpoint_sort_completion_desc(
+    client: TestClient, synthetic_drives
+) -> None:
     j = client.get("/api/projects").json()
     pcts = [p["completion_percentage"] for p in j["projects"]]
     # Top should be alpha-governed (86), tail includes 0% projects
@@ -203,14 +248,16 @@ def test_projects_endpoint_includes_links(client: TestClient, synthetic_drives) 
     j = client.get("/api/projects").json()
     by_name = {p["name"]: p for p in j["projects"]}
     alpha = by_name["alpha-governed"]
-    assert alpha["links"]["floyd_md"].startswith("file://")
+    assert alpha["links"]["floyd_md"].startswith("/api/fs/serve?path=")
     assert alpha["links"]["floyd_md"].endswith("/FLOYD.md")
     assert alpha["links"]["report_json"] is not None
     bravo = by_name["bravo-candidate"]
     assert bravo["links"]["report_json"] is None  # no report file
 
 
-def test_projects_endpoint_cache_serves_second_call(client: TestClient, synthetic_drives) -> None:
+def test_projects_endpoint_cache_serves_second_call(
+    client: TestClient, synthetic_drives
+) -> None:
     first = client.get("/api/projects").json()
     second = client.get("/api/projects").json()
     assert first["cached"] is False
@@ -221,6 +268,7 @@ def test_projects_endpoint_cache_serves_second_call(client: TestClient, syntheti
 # ---------------------------------------------------------------------------
 # /api/quarantine-summary
 # ---------------------------------------------------------------------------
+
 
 def test_quarantine_summary_counts(client: TestClient, synthetic_drives) -> None:
     resp = client.get("/api/quarantine-summary")
@@ -254,10 +302,11 @@ def test_quarantine_summary_excludes_ledger_and_why_files(
     drive = tmp_path / "QDrive"
     drive.mkdir()
     _make_project(
-        drive, "filtered",
+        drive,
+        "filtered",
         quarantine_files=[
             ("2026-04-30", "real.py"),
-            ("2026-04-30", "LEDGER.jsonl"),     # excluded
+            ("2026-04-30", "LEDGER.jsonl"),  # excluded
             ("2026-04-30", "real.py.WHY.md"),  # excluded (WHY companion)
         ],
     )
@@ -280,6 +329,7 @@ def test_quarantine_summary_cache(client: TestClient, synthetic_drives) -> None:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def test_walk_for_projects_skips_excluded_dirs(tmp_path: Path) -> None:
     drive = tmp_path / "Drive"

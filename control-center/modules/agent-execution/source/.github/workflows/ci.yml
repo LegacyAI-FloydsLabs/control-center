@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install backend dependencies
+        run: bun install
+
+      - name: Install frontend dependencies
+        run: cd ui && bun install
+
+      - name: Fix node-pty permissions
+        run: chmod +x node_modules/node-pty/prebuilds/linux-x64/spawn-helper || true
+
+      - name: Run tests
+        run: node --import tsx --test src/**/*.test.ts
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: bun install && cd ui && bun install
+
+      - name: Type check backend
+        run: npx tsc --noEmit
+
+      - name: Type check frontend
+        run: cd ui && npx tsc --noEmit

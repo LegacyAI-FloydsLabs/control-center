@@ -1,9 +1,9 @@
-"""Tests for the Dual Terminal sidepanel endpoints (Step 6).
+"""Tests for the Dual Console sidepanel endpoints.
 
 Verifies:
   POST   /api/sidepanel/spawn         — creates an ephemeral agent and starts it
   DELETE /api/sidepanel/{agent_id}    — refuses non-sidepanel agents, tears down sidepanel agents
-  index.html ships the Dual Terminal tab markup + sidepanel client code
+  index.html ships the Dual Console tab markup + sidepanel client code
 
 The actual PTY plumbing is exercised end-to-end by tests/test_api_smoke.py;
 here we focus on the sidepanel-specific endpoints + frontend wiring.
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -61,7 +61,7 @@ def test_spawn_persists_agent_with_sidepanel_tags(client: TestClient) -> None:
     agent = agents_by_id[spawned["agent_id"]]
     assert "ephemeral" in agent["tags"]
     assert "sidepanel" in agent["tags"]
-    assert agent["label"] == "Dual Terminal"
+    assert agent["label"] == "Dual Console"
     assert agent["auto_start"] is True
 
 
@@ -108,9 +108,9 @@ def test_delete_refuses_non_sidepanel_agent(client: TestClient) -> None:
     assert any(a["id"] == aid for a in listing)
 
 
-def test_index_html_has_dual_terminal_tab(client: TestClient) -> None:
+def test_index_html_has_dual_console_tab(client: TestClient) -> None:
     body = client.get("/").text
-    assert ">Dual Terminal<" in body
+    assert ">Dual Console<" in body
     assert 'id="cb-page-dualterm"' in body
     assert 'id="dt-grid"' in body
 

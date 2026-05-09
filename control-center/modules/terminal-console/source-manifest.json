@@ -1,0 +1,15 @@
+{
+  "capability": "terminal-console",
+  "source_name": "Terminal Control Center (TCC)",
+  "source_path": "/Volumes/Storage/Legacy Agents/control-center",
+  "copied_at": null,
+  "source_revision": null,
+  "copied_scope": [],
+  "status": "inline — terminal code is currently embedded in server.py + index.html, not yet extracted to module",
+  "dashboard_runtime": {
+    "route_prefix": "/",
+    "api_prefix": "/api/agents",
+    "public_port": 10527
+  },
+  "original_preservation_check": null
+}

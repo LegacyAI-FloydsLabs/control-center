@@ -1,0 +1,702 @@
+{
+  "run_timestamp": "2026-05-09T12:58:10.282064+00:00",
+  "summary": {
+    "total": 76,
+    "pass": 71,
+    "fail": 5,
+    "errors": [
+      "Shell/theme toggle: No data-theme",
+      "Shell/sidebar toggle: Not found",
+      "Project Control/status badge: No badge on first card",
+      "Project Control/completion bar: Not found on first card",
+      "Console Errors/JS errors: 12 errors: ['Failed to load resource: the server responded with a status of 405 "
+    ]
+  },
+  "pass_rate": 93.4,
+  "entries": [
+    {
+      "timestamp": "2026-05-09T12:57:05.618620+00:00",
+      "page": "Shell",
+      "element": "page title",
+      "action": "check",
+      "expected": "Contains 'Command Kernel'",
+      "result": "PASS",
+      "detail": "Floyd's Unified Command Kernel"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:05.633923+00:00",
+      "page": "Shell",
+      "element": "sidebar",
+      "action": "check",
+      "expected": "Visible",
+      "result": "PASS",
+      "detail": ".sidebar exists"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:05.640754+00:00",
+      "page": "Shell",
+      "element": "brand title",
+      "action": "check",
+      "expected": "F.U.C.K. visible",
+      "result": "PASS",
+      "detail": "F\nloyd's\nU\nnified\nC\nommand\nK\nernel"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:05.960090+00:00",
+      "page": "Shell",
+      "element": "hero image",
+      "action": "check",
+      "expected": "Loads 200",
+      "result": "PASS",
+      "detail": "src=/static/hero-text.png"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:05.967365+00:00",
+      "page": "Shell",
+      "element": "status bar",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "Connected\n63 agents\n17 running \u00b7 46 stopped\nCtrl+K: commands"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:05.969105+00:00",
+      "page": "Shell",
+      "element": "nav tabs",
+      "action": "check",
+      "expected": "11 tabs",
+      "result": "PASS",
+      "detail": "count=11"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:06.348121+00:00",
+      "page": "Shell",
+      "element": "theme toggle",
+      "action": "check",
+      "expected": "Switches theme",
+      "result": "FAIL",
+      "detail": "No data-theme"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:09.378350+00:00",
+      "page": "Shell",
+      "element": "sidebar toggle",
+      "action": "check",
+      "expected": "Clickable",
+      "result": "FAIL",
+      "detail": "Not found"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:11.406110+00:00",
+      "page": "Project Control",
+      "element": "project cards",
+      "action": "check",
+      "expected": "> 0 cards",
+      "result": "PASS",
+      "detail": "count=57"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:11.407547+00:00",
+      "page": "Project Control",
+      "element": "status badge",
+      "action": "check",
+      "expected": "Shows status",
+      "result": "FAIL",
+      "detail": "No badge on first card"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:11.408879+00:00",
+      "page": "Project Control",
+      "element": "completion bar",
+      "action": "check",
+      "expected": "Visible",
+      "result": "FAIL",
+      "detail": "Not found on first card"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:11.947914+00:00",
+      "page": "Project Control",
+      "element": "card links",
+      "action": "check",
+      "expected": "> 0 links",
+      "result": "PASS",
+      "detail": "count=4"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:12.272910+00:00",
+      "page": "Project Control",
+      "element": "card link targets",
+      "action": "check",
+      "expected": "All 200",
+      "result": "PASS",
+      "detail": "4 links checked"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:12.276145+00:00",
+      "page": "Project Control",
+      "element": "Bootstrap button",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "In expanded card"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:12.277699+00:00",
+      "page": "Project Control",
+      "element": "Finisher button",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "In expanded card"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:12.788752+00:00",
+      "page": "Project Control",
+      "element": "search filter",
+      "action": "check",
+      "expected": "Filters cards",
+      "result": "PASS",
+      "detail": "57\u21921"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:13.304012+00:00",
+      "page": "Project Control",
+      "element": "quarantine alert",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "visible=True"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:13.309905+00:00",
+      "page": "Project Control",
+      "element": "quarantine link",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "/api/fs/list?path=/Volumes/Storage/TEAR/.floyd/qua"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:15.476676+00:00",
+      "page": "Terminal Console",
+      "element": "agent list",
+      "action": "check",
+      "expected": "> 0 agents",
+      "result": "PASS",
+      "detail": "count=126"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:18.032115+00:00",
+      "page": "Dual Console",
+      "element": "layout buttons",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "dual + single"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:18.033303+00:00",
+      "page": "Dual Console",
+      "element": "respawn button",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#dt-respawn-btn"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:18.036099+00:00",
+      "page": "Dual Console",
+      "element": "xterm panes",
+      "action": "check",
+      "expected": ">= 1 pane",
+      "result": "PASS",
+      "detail": "count=65"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:20.062754+00:00",
+      "page": "Workspace",
+      "element": "refresh button",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#ws-refresh-btn"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:20.063946+00:00",
+      "page": "Workspace",
+      "element": "workspace page",
+      "action": "check",
+      "expected": "Visible",
+      "result": "PASS",
+      "detail": "#cb-page-workspace exists"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:23.594081+00:00",
+      "page": "Workspace Editor",
+      "element": "load status",
+      "action": "check",
+      "expected": "up",
+      "result": "PASS",
+      "detail": "\u25cf up (native)"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:23.596515+00:00",
+      "page": "Workspace Editor",
+      "element": "MWIDE mount",
+      "action": "check",
+      "expected": "Has children",
+      "result": "PASS",
+      "detail": "134 elements"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:23.599258+00:00",
+      "page": "Workspace Editor",
+      "element": "MWIDE CSS",
+      "action": "check",
+      "expected": "Loaded",
+      "result": "PASS",
+      "detail": "/workspace-editor/assets/index-CxdVQA8c.css"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.143564+00:00",
+      "page": "System Health",
+      "element": "scan meta",
+      "action": "check",
+      "expected": "Shows scan info",
+      "result": "PASS",
+      "detail": "scanned 5/9/2026, 8:57:26 AM \u00b7 \u2713 fresh \u00b7 2.85s"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.144780+00:00",
+      "page": "System Health",
+      "element": "rescan button",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#health-rescan-btn"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.148486+00:00",
+      "page": "System Health",
+      "element": "apps table",
+      "action": "check",
+      "expected": "> 0 rows",
+      "result": "PASS",
+      "detail": "count=44"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.157327+00:00",
+      "page": "System Health",
+      "element": "app row data",
+      "action": "check",
+      "expected": "Name + size",
+      "result": "PASS",
+      "detail": "Docker: 2298MB"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.160718+00:00",
+      "page": "System Health",
+      "element": "memory table",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "rows=25"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.161978+00:00",
+      "page": "System Health",
+      "element": "disk candidates table",
+      "action": "check",
+      "expected": "Not required",
+      "result": "PASS",
+      "detail": "No candidates table"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:27.700371+00:00",
+      "page": "System Health",
+      "element": "sort by size",
+      "action": "check",
+      "expected": "Clickable",
+      "result": "PASS",
+      "detail": "size_mb header clicked"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:31.235715+00:00",
+      "page": "System Map",
+      "element": "mount div",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#system-map-mount"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:31.247137+00:00",
+      "page": "System Map",
+      "element": "shadow DOM content",
+      "action": "check",
+      "expected": "> 100 chars",
+      "result": "PASS",
+      "detail": "70660 chars"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:31.250718+00:00",
+      "page": "System Map",
+      "element": "infra map tabs",
+      "action": "check",
+      "expected": "Present in shadow DOM",
+      "result": "PASS",
+      "detail": "nav-tab buttons found"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:34.786384+00:00",
+      "page": "Agent Execution",
+      "element": "load status",
+      "action": "check",
+      "expected": "up",
+      "result": "PASS",
+      "detail": "\u25cf up (native)"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:34.790420+00:00",
+      "page": "Agent Execution",
+      "element": "ATerm mount",
+      "action": "check",
+      "expected": "Has children",
+      "result": "PASS",
+      "detail": "37 elements"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:34.791781+00:00",
+      "page": "Agent Execution",
+      "element": "reload button",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#agent-exec-reload-btn"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:38.354319+00:00",
+      "page": "Dev Launcher",
+      "element": "iframe",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "iframe in dev-launcher page"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:38.356808+00:00",
+      "page": "Dev Launcher",
+      "element": "iframe src",
+      "action": "check",
+      "expected": "Points to /dev-launcher/",
+      "result": "PASS",
+      "detail": "/dev-launcher/"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:38.373054+00:00",
+      "page": "Dev Launcher",
+      "element": "SPA content",
+      "action": "check",
+      "expected": "React rendered",
+      "result": "PASS",
+      "detail": "1451 elements in #root"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:41.907683+00:00",
+      "page": "Spend Watch",
+      "element": "mount div",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#spend-watch-mount"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:41.912303+00:00",
+      "page": "Spend Watch",
+      "element": "shadow DOM content",
+      "action": "check",
+      "expected": "> 100 chars",
+      "result": "PASS",
+      "detail": "29896 chars"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.452731+00:00",
+      "page": "Mac Cleanup",
+      "element": "mount div",
+      "action": "check",
+      "expected": "Present",
+      "result": "PASS",
+      "detail": "#mac-cleanup-mount"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.457614+00:00",
+      "page": "Mac Cleanup",
+      "element": "shadow DOM content",
+      "action": "check",
+      "expected": "> 100 chars",
+      "result": "PASS",
+      "detail": "21882 chars"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.766029+00:00",
+      "page": "Static Assets",
+      "element": "/static/vendor/xterm.css",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.772780+00:00",
+      "page": "Static Assets",
+      "element": "/static/vendor/xterm.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.776934+00:00",
+      "page": "Static Assets",
+      "element": "/static/vendor/xterm-addon-fit.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.781129+00:00",
+      "page": "Static Assets",
+      "element": "/static/vendor/xterm-addon-search.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.784478+00:00",
+      "page": "Static Assets",
+      "element": "/static/vendor/xterm-addon-unicode11.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.788358+00:00",
+      "page": "Static Assets",
+      "element": "/static/vendor/xterm-addon-webgl.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.792479+00:00",
+      "page": "Static Assets",
+      "element": "/static/hero-text.png",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.796716+00:00",
+      "page": "Static Assets",
+      "element": "/static/infrastructure-map.html",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.804885+00:00",
+      "page": "Static Assets",
+      "element": "/static/tech-ai-spend-watch.html",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.808879+00:00",
+      "page": "Static Assets",
+      "element": "/static/mac-cleanup-report.html",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.823970+00:00",
+      "page": "Static Assets",
+      "element": "/workspace-editor/assets/index-Dlb0cSd5.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.828629+00:00",
+      "page": "Static Assets",
+      "element": "/workspace-editor/assets/index-CxdVQA8c.css",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.838982+00:00",
+      "page": "Static Assets",
+      "element": "/agent-execution/assets/index-COUD7RTI.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.842320+00:00",
+      "page": "Static Assets",
+      "element": "/agent-execution/assets/index-B2TYIT7J.css",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.848496+00:00",
+      "page": "Static Assets",
+      "element": "/dev-launcher/assets/index-DcxcRrc8.js",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.853050+00:00",
+      "page": "Static Assets",
+      "element": "/dev-launcher/assets/index-CuAYSVSw.css",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:45.855023+00:00",
+      "page": "API Endpoints",
+      "element": "/api/health",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.455142+00:00",
+      "page": "API Endpoints",
+      "element": "/api/projects",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.463568+00:00",
+      "page": "API Endpoints",
+      "element": "/api/agents",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.467632+00:00",
+      "page": "API Endpoints",
+      "element": "/api/tags",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.470683+00:00",
+      "page": "API Endpoints",
+      "element": "/api/layouts",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.472795+00:00",
+      "page": "API Endpoints",
+      "element": "/api/cron/helper",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.475543+00:00",
+      "page": "API Endpoints",
+      "element": "/api/vault/list",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.516838+00:00",
+      "page": "API Endpoints",
+      "element": "/api/quarantine-summary",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.520417+00:00",
+      "page": "API Endpoints",
+      "element": "/api/system-health",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.688194+00:00",
+      "page": "API Endpoints",
+      "element": "/api/proxy/hostinger/subscriptions",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.691764+00:00",
+      "page": "API Endpoints",
+      "element": "/api/fs/home",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:57:46.701903+00:00",
+      "page": "API Endpoints",
+      "element": "/api/fs/list?path=/Volumes/Storage",
+      "action": "check",
+      "expected": "200",
+      "result": "PASS",
+      "detail": "200"
+    },
+    {
+      "timestamp": "2026-05-09T12:58:10.227962+00:00",
+      "page": "Console Errors",
+      "element": "JS errors",
+      "action": "check",
+      "expected": "0 critical errors",
+      "result": "FAIL",
+      "detail": "12 errors: ['Failed to load resource: the server responded with a status of 405 (Method Not Allowed)', 'Failed to load resource: the server responded with a status of 405 (Method Not Allowed)', 'Faile"
+    }
+  ]
+}

@@ -64,8 +64,11 @@ def page(browser, artifacts_dir):
 
 def _open_tcc(page: Page) -> None:
     page.goto(base_url(), wait_until="networkidle")
-    # Sidebar agent list must populate before any workflow can proceed
+    # Sidebar agent list must populate before any workflow can proceed.
     page.wait_for_selector("#agent-list .agent-list-item", state="visible", timeout=15_000)
+    # Dashboard defaults to Governance; terminal workflows must enter Terminals explicitly.
+    page.locator("#cb-tab-terminals").click()
+    page.wait_for_selector("#layout-select", state="visible", timeout=5_000)
 
 
 def _read_xterm_buffer(page: Page, agent_id: str) -> str:

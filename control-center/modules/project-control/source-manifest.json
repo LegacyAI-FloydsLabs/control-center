@@ -1,0 +1,15 @@
+{
+  "capability": "project-control",
+  "source_name": "Governance Dashboard / ControlBoard",
+  "source_path": "inline — server.py governance endpoints are Kernel-owned native code",
+  "copied_at": "2026-04-30",
+  "source_revision": "native",
+  "copied_scope": ["server.py governance endpoints", "index.html Project Control page"],
+  "status": "native Kernel code — Bootstrap/Finisher dispatch still incomplete",
+  "dashboard_runtime": {
+    "route_prefix": "/",
+    "api_prefix": "/api/projects",
+    "public_port": 10527
+  },
+  "original_preservation_check": "n/a — native code"
+}

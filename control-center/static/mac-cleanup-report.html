@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mac Cleanup Report — Douglas Talley</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2129;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --orange: #db6d28;
+    --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.3rem;
+  }
+  .header p { color: var(--text-dim); font-size: 0.95rem; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .stat-card .label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+  .stat-card .value { font-size: 1.8rem; font-weight: 700; }
+  .stat-card .value.red { color: var(--red); }
+  .stat-card .value.yellow { color: var(--yellow); }
+  .stat-card .value.green { color: var(--green); }
+  .stat-card .value.accent { color: var(--accent); }
+  .stat-card .sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  .section { margin-bottom: 2.5rem; }
+  .section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section h2 .icon { font-size: 1.1rem; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  th {
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  th:hover { color: var(--accent); }
+  th.sorted-asc::after { content: ' ▲'; color: var(--accent); }
+  th.sorted-desc::after { content: ' ▼'; color: var(--accent); }
+  td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tr:hover { background: rgba(88, 166, 255, 0.04); }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge.remove { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+  .badge.keep { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+  .badge.consider { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+  .badge.guitar { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+  .badge.essential { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
+
+  .bar-container {
+    width: 100%;
+    height: 10px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 0.3rem;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  .memory-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+  .memory-row .name { min-width: 140px; font-size: 0.85rem; font-weight: 500; }
+  .memory-row .bar-container { flex: 1; }
+  .memory-row .amount { min-width: 70px; text-align: right; font-size: 0.82rem; color: var(--text-dim); font-family: 'SF Mono', monospace; }
+
+  .rec-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .rec-box h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .rec-box p { font-size: 0.88rem; color: var(--text-dim); line-height: 1.65; }
+  .rec-box code {
+    background: var(--surface2);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    color: var(--accent);
+  }
+
+  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .tab-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .note { font-size: 0.82rem; color: var(--text-dim); font-style: italic; margin-top: 0.5rem; }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    td, th { padding: 0.4rem; font-size: 0.8rem; }
+    .memory-row .name { min-width: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Mac System Cleanup Report</h1>
+  <p>Generated March 19, 2026 &mdash; 24 GB RAM System</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">Total Apps Scanned</div>
+    <div class="value accent">38</div>
+    <div class="sub">/Applications + ~/Applications</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Recoverable Disk Space</div>
+    <div class="value green">~5.6 GB</div>
+    <div class="sub">From uninstalling rarely-used apps</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Chrome Memory Usage</div>
+    <div class="value red">~4.2 GB</div>
+    <div class="sub">28 renderer processes</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Swap Used</div>
+    <div class="value yellow">1.9 GB</div>
+    <div class="sub">of 3 GB total — system is under pressure</div>
+  </div>
+</div>
+
+<!-- DISK SPACE SECTION -->
+<div class="section">
+  <h2><span class="icon">💾</span> Goal 1: Disk Space — Applications by Size</h2>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="filterApps('all')">All Apps</button>
+    <button class="tab-btn" onclick="filterApps('remove')">Remove Candidates</button>
+    <button class="tab-btn" onclick="filterApps('guitar')">Guitar Apps</button>
+    <button class="tab-btn" onclick="filterApps('keep')">Keep / Essential</button>
+  </div>
+
+  <table id="appTable">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Application</th>
+        <th onclick="sortTable(1)">Size</th>
+        <th onclick="sortTable(2)">Last Used</th>
+        <th onclick="sortTable(3)">Recommendation</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody id="appBody"></tbody>
+  </table>
+  <p class="note">* "No data" for last-used means macOS Spotlight has no record of the app being opened, or it's a CLI/helper app. Click column headers to sort.</p>
+</div>
+
+<!-- MEMORY SECTION -->
+<div class="section">
+  <h2><span class="icon">🧠</span> Goal 2: Memory — Current Usage Breakdown</h2>
+  <p style="color: var(--text-dim); font-size: 0.88rem; margin-bottom: 1.2rem;">
+    Your 24 GB RAM is under heavy pressure. The system is using <strong style="color:var(--yellow)">1.9 GB of swap</strong>, meaning physical RAM is exhausted and macOS is paging to disk. Here's where it's going:
+  </p>
+
+  <div id="memoryBars"></div>
+</div>
+
+<!-- DETAILED MEMORY BREAKDOWN -->
+<div class="section">
+  <h2><span class="icon">🔍</span> Detailed Process Breakdown</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>App / Process Group</th>
+        <th>Process Count</th>
+        <th>Total RAM</th>
+        <th>% of System</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Google Chrome</strong></td>
+        <td>35 processes</td>
+        <td style="color:var(--red); font-weight:600;">~4.2 GB</td>
+        <td>17.5%</td>
+        <td><span class="badge remove">Critical Hog</span></td>
+      </tr>
+      <tr>
+        <td><strong>OrbStack</strong> (VM Manager)</td>
+        <td>2 processes</td>
+        <td style="color:var(--red); font-weight:600;">~1.93 GB</td>
+        <td>8.0%</td>
+        <td><span class="badge essential">Essential — tune limits</span></td>
+      </tr>
+      <tr>
+        <td><strong>macOS Virtualization</strong></td>
+        <td>1 process</td>
+        <td style="color:var(--yellow); font-weight:600;">~1.01 GB</td>
+        <td>4.2%</td>
+        <td><span class="badge essential">OrbStack VM backend</span></td>
+      </tr>
+      <tr>
+        <td><strong>Notion</strong></td>
+        <td>10 processes</td>
+        <td style="color:var(--yellow); font-weight:600;">~1.21 GB</td>
+        <td>5.0%</td>
+        <td><span class="badge consider">Heavy for a notes app</span></td>
+      </tr>
+      <tr>
+        <td><strong>Claude Desktop</strong></td>
+        <td>8 processes</td>
+        <td style="font-weight:600;">~0.72 GB</td>
+        <td>3.0%</td>
+        <td><span class="badge keep">Reasonable</span></td>
+      </tr>
+      <tr>
+        <td><strong>Floyd (all)</strong></td>
+        <td>16+ processes</td>
+        <td style="color:var(--yellow); font-weight:600;">~0.42 GB</td>
+        <td>1.7%</td>
+        <td><span class="badge consider">Many helpers — 39% CPU</span></td>
+      </tr>
+      <tr>
+        <td><strong>Logi Options+</strong></td>
+        <td>2 processes</td>
+        <td style="font-weight:600;">~0.13 GB</td>
+        <td>0.5%</td>
+        <td><span class="badge consider">208h CPU time</span></td>
+      </tr>
+      <tr>
+        <td><strong>WindowServer</strong></td>
+        <td>1 process</td>
+        <td style="font-weight:600;">~0.10 GB</td>
+        <td>0.4%</td>
+        <td><span class="badge keep">System — 16% CPU</span></td>
+      </tr>
+      <tr>
+        <td><strong>VSD Craft</strong></td>
+        <td>2 processes</td>
+        <td style="font-weight:600;">~0.13 GB</td>
+        <td>0.5%</td>
+        <td><span class="badge consider">Running idle?</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="section">
+  <h2><span class="icon">⚡</span> Actionable Recommendations</h2>
+
+  <div class="rec-box" style="border-left: 3px solid var(--red);">
+    <h3 style="color:var(--red);">1. Tame Chrome — Biggest Win (~2-3 GB recoverable)</h3>
+    <p>
+      Chrome is running <strong>28 tab renderers</strong> plus GPU, network, and extension processes — 35 total, eating ~4.2 GB.
+      Close tabs you're not actively using, or install a tab suspender extension like <strong>The Great Suspender</strong>.
+      Consider moving low-priority browsing to Safari, which uses significantly less memory per tab on macOS.
+      Alternatively, use Chrome profiles to separate work vs. personal and only open one at a time.
+    </p>
+  </div>
+
+  <div class="rec-box" style="border-left: 3px solid var(--yellow);">
+    <h3 style="color:var(--yellow);">2. Notion — Close When Not In Active Use (~1.2 GB)</h3>
+    <p>
+      Notion has been running since Tuesday with 10 processes consuming 1.21 GB. It's an Electron app, so each workspace/tab is a separate process.
+      If you're not actively writing in Notion, quit it and use the web version when you need quick lookups. That alone frees over a gig.
+    </p>
+  </div>
+
+  <div class="rec-box" style="border-left: 3px solid var(--orange);">
+    <h3 style="color:var(--orange);">3. Floyd — Kill Orphaned Helpers</h3>
+    <p>
+      Floyd is spawning multiple <code>superfloyd_*</code> test/helper processes and <strong>4 separate floyd-lab-server instances</strong>.
+      The main <code>floyd4</code> process is consuming 39% CPU continuously. Run:<br><br>
+      <code>killall superfloyd_test superfloyd_56</code> to clean up orphans, and check if multiple <code>floyd-lab-server</code> instances are intentional.
+      FLOYD CURSE'M alone has 5+ Electron helper plugins running.
+    </p>
+  </div>
+
+  <div class="rec-box" style="border-left: 3px solid var(--accent);">
+    <h3 style="color:var(--accent);">4. OrbStack VM Limits</h3>
+    <p>
+      OrbStack + its VM backend is using ~2.94 GB combined — necessary for Docker, but tunable.
+      In OrbStack settings, you can limit the VM's max memory. If you're not running heavy containers, set it to 4-6 GB max
+      instead of letting it dynamically grow. This prevents it from squeezing out other apps.
+    </p>
+  </div>
+
+  <div class="rec-box" style="border-left: 3px solid var(--green);">
+    <h3 style="color:var(--green);">5. Disk Space — Uninstall Rarely-Used Apps (~5.6 GB)</h3>
+    <p>
+      See the app table above filtered to "Remove Candidates." The biggest wins are:
+      <strong>VSD Craft</strong> (1.5 GB), <strong>Wine Stable</strong> (658 MB), <strong>Tapo</strong> (815 MB),
+      <strong>FLOYD CURSE'M</strong> (677 MB if you have a leaner alternative), and <strong>DeepAgent</strong> (632 MB).
+      Also remove <code>Chrome Remote Desktop Host Uninstaller</code>, <code>Clone in VS Code</code>, and other micro utilities.
+      Don't forget to run <code>brew cleanup</code> and clear <code>~/Library/Caches</code> for additional savings.
+    </p>
+  </div>
+
+  <div class="rec-box" style="border-left: 3px solid var(--purple);">
+    <h3 style="color:var(--purple);">6. Quick Memory Recovery Playbook</h3>
+    <p>
+      To immediately free ~4-6 GB of RAM for Docker/OrbStack work:<br><br>
+      <code>osascript -e 'quit app "Notion"'</code> → saves ~1.2 GB<br>
+      Close half your Chrome tabs → saves ~2 GB<br>
+      <code>killall superfloyd_test</code> → cleans Floyd orphans<br>
+      Quit VSD Craft if idle → saves ~130 MB<br><br>
+      That should eliminate swap usage entirely and give Docker/OrbStack breathing room.
+    </p>
+  </div>
+</div>
+
+<div class="header" style="margin-top: 2rem; border-top: 1px solid var(--border); border-bottom: none; padding-top: 1.5rem;">
+  <p style="color: var(--text-dim); font-size: 0.82rem;">Report generated by Claude for Douglas Talley &mdash; LegacyAI.info</p>
+</div>
+
+<script>
+const apps = [
+  { name: "Docker", size: 2491, lastUsed: "Active now", rec: "essential", notes: "Core tool — keep. 2.4 GB on disk." },
+  { name: "VSD Craft", size: 1565, lastUsed: "No data", rec: "remove", notes: "1.5 GB — running idle in memory too" },
+  { name: "Google Chrome", size: 1364, lastUsed: "Active now", rec: "keep", notes: "1.3 GB on disk. Memory hog but essential." },
+  { name: "Tapo", size: 835, lastUsed: "No data", rec: "remove", notes: "Smart home cam app — 815 MB. Use mobile?" },
+  { name: "AbacusAI", size: 826, lastUsed: "No data", rec: "consider", notes: "806 MB. Evaluate if still using." },
+  { name: "OrbStack", size: 792, lastUsed: "Active now", rec: "essential", notes: "Docker/Linux VM manager — keep." },
+  { name: "FLOYD CURSE'M", size: 693, lastUsed: "Active now", rec: "consider", notes: "677 MB + spawns many helpers. Consolidate?" },
+  { name: "Wine Stable", size: 674, lastUsed: "No data", rec: "remove", notes: "658 MB. Windows compat — reinstall if needed." },
+  { name: "DeepAgent", size: 647, lastUsed: "No data", rec: "remove", notes: "632 MB. Not actively running." },
+  { name: "Claude", size: 581, lastUsed: "Active now", rec: "keep", notes: "567 MB. Currently in use." },
+  { name: "AbacusAI Listener", size: 571, lastUsed: "No data", rec: "consider", notes: "558 MB. Helper for AbacusAI." },
+  { name: "Obsidian", size: 486, lastUsed: "No data", rec: "consider", notes: "475 MB. Using Notion instead?" },
+  { name: "Logi Options+", size: 488, lastUsed: "Active now", rec: "keep", notes: "Mouse/keyboard driver — 476 MB." },
+  { name: "zoom.us", size: 427, lastUsed: "No data", rec: "consider", notes: "417 MB. Keep if used for meetings." },
+  { name: "GitHub Desktop", size: 418, lastUsed: "No data", rec: "consider", notes: "408 MB. Using CLI/VS Code instead?" },
+  { name: "Ollama", size: 326, lastUsed: "No data", rec: "consider", notes: "318 MB. Local LLMs — keep if using." },
+  { name: "MiniMax Agent", size: 318, lastUsed: "No data", rec: "remove", notes: "311 MB. Not running." },
+  { name: "Notion", size: 273, lastUsed: "Active now", rec: "keep", notes: "267 MB on disk, 1.2 GB in RAM." },
+  { name: "Transkriptor", size: 151, lastUsed: "No data", rec: "consider", notes: "148 MB. Transcription tool." },
+  { name: "iTerm (system)", size: 136, lastUsed: "No data", rec: "keep", notes: "133 MB. Terminal essential." },
+  { name: "iTerm (user)", size: 133, lastUsed: "No data", rec: "remove", notes: "Duplicate — remove one copy." },
+  { name: "Bear", size: 108, lastUsed: "No data", rec: "consider", notes: "105 MB. Another notes app?" },
+  { name: "Speak2", size: 100, lastUsed: "No data", rec: "remove", notes: "98 MB. Not running." },
+  { name: "Whisper", size: 77, lastUsed: "No data", rec: "consider", notes: "76 MB. Speech-to-text tool." },
+  { name: "Tailscale", size: 29, lastUsed: "No data", rec: "keep", notes: "28 MB. VPN — tiny footprint." },
+  { name: "TestFlight", size: 11, lastUsed: "No data", rec: "keep", notes: "11 MB. Apple beta testing." },
+  { name: "Latest", size: 8, lastUsed: "No data", rec: "keep", notes: "8 MB. App update checker." },
+  { name: "Floyd Desktop", size: 5, lastUsed: "No data", rec: "keep", notes: "Tiny launcher." },
+  { name: "Clone in VS Code", size: 4, lastUsed: "No data", rec: "remove", notes: "Helper — 4 MB." },
+  { name: "FLOYD CODE", size: 3, lastUsed: "No data", rec: "keep", notes: "Tiny launcher." },
+  { name: "Chrome RD Uninstaller", size: 3, lastUsed: "No data", rec: "remove", notes: "Run it to remove Chrome Remote Desktop, then delete." },
+  { name: "FLOYD-SuperCode", size: 3, lastUsed: "No data", rec: "keep", notes: "Tiny launcher." },
+  { name: "iTermBrowserPlugin", size: 3, lastUsed: "No data", rec: "keep", notes: "3 MB. iTerm helper." },
+  { name: "Agent DVR (user)", size: 1, lastUsed: "No data", rec: "consider", notes: "1 MB. Security cam agent." },
+  { name: "CASPER Prime", size: 0, lastUsed: "No data", rec: "essential", notes: "LegacyAI core — keep." },
+  { name: "SUPERFLOYD-BEAST", size: 0, lastUsed: "No data", rec: "keep", notes: "Launcher stub." },
+  { name: "SUPERFLOYD-CLI", size: 0, lastUsed: "No data", rec: "keep", notes: "Launcher stub." },
+  { name: "DeepCode", size: 1, lastUsed: "No data", rec: "consider", notes: "<1 MB. Code analysis." },
+  { name: "iTermAI", size: 1, lastUsed: "No data", rec: "keep", notes: "<1 MB. iTerm AI plugin." },
+  { name: "Safari", size: 0, lastUsed: "Mar 12, 2026", rec: "keep", notes: "System app — can't remove." },
+];
+
+const memoryData = [
+  { name: "Chrome (all)", mb: 4300, color: "var(--red)" },
+  { name: "OrbStack + VM", mb: 2940, color: "var(--accent)" },
+  { name: "Notion", mb: 1210, color: "var(--yellow)" },
+  { name: "Claude Desktop", mb: 720, color: "var(--green)" },
+  { name: "Floyd (all)", mb: 420, color: "var(--orange)" },
+  { name: "WindowServer", mb: 100, color: "var(--text-dim)" },
+  { name: "Logi Options+", mb: 130, color: "var(--text-dim)" },
+  { name: "VSD Craft", mb: 130, color: "var(--text-dim)" },
+  { name: "Spotlight", mb: 150, color: "var(--text-dim)" },
+  { name: "Other System", mb: 2500, color: "var(--border)" },
+];
+
+// Render app table
+function renderApps(filter) {
+  const tbody = document.getElementById('appBody');
+  const filtered = filter === 'all' ? apps : apps.filter(a => a.rec === filter);
+  tbody.innerHTML = filtered.map(a => `
+    <tr data-rec="${a.rec}">
+      <td><strong>${a.name}</strong></td>
+      <td>${a.size > 0 ? (a.size >= 1024 ? (a.size/1024).toFixed(1) + ' GB' : a.size + ' MB') : '<1 MB'}</td>
+      <td>${a.lastUsed}</td>
+      <td><span class="badge ${a.rec}">${a.rec === 'remove' ? 'Uninstall' : a.rec === 'consider' ? 'Consider' : a.rec === 'guitar' ? 'Guitar' : a.rec === 'essential' ? 'Essential' : 'Keep'}</span></td>
+      <td style="color:var(--text-dim); white-space:normal; max-width:300px;">${a.notes}</td>
+    </tr>
+  `).join('');
+}
+
+function filterApps(f) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderApps(f);
+}
+
+let sortCol = -1, sortAsc = true;
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+
+  const keys = ['name', 'size', 'lastUsed', 'rec'];
+  apps.sort((a, b) => {
+    let va = a[keys[col]], vb = b[keys[col]];
+    if (keys[col] === 'size') return sortAsc ? va - vb : vb - va;
+    return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  renderApps('all');
+
+  document.querySelectorAll('th').forEach((th, i) => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (i === col) th.classList.add(sortAsc ? 'sorted-asc' : 'sorted-desc');
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.tab-btn').classList.add('active');
+}
+
+// Render memory bars
+function renderMemory() {
+  const container = document.getElementById('memoryBars');
+  const maxMb = Math.max(...memoryData.map(d => d.mb));
+  container.innerHTML = memoryData.map(d => `
+    <div class="memory-row">
+      <div class="name">${d.name}</div>
+      <div class="bar-container">
+        <div class="bar-fill" style="width: ${(d.mb / maxMb * 100).toFixed(1)}%; background: ${d.color};"></div>
+      </div>
+      <div class="amount">${d.mb >= 1024 ? (d.mb/1024).toFixed(1) + ' GB' : d.mb + ' MB'}</div>
+    </div>
+  `).join('');
+}
+
+renderApps('all');
+renderMemory();
+</script>
+</body>
+</html>

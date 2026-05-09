@@ -1,0 +1,15 @@
+{
+  "capability": "system-health",
+  "source_name": "mac-cleanup-report",
+  "source_path": "inline — scripts/system_scan.py is Kernel-owned native code, not a source copy",
+  "copied_at": "2026-04-30",
+  "source_revision": "native",
+  "copied_scope": ["scripts/system_scan.py", "scripts/with_server.py"],
+  "status": "native Kernel code — no external source to copy",
+  "dashboard_runtime": {
+    "route_prefix": "/",
+    "api_prefix": "/api/health",
+    "public_port": 10527
+  },
+  "original_preservation_check": "n/a — native code"
+}

@@ -1,0 +1,45 @@
+{
+    "_schema": "governance-v1.6.2",
+    "_verified": true,
+    "_critic_rounds": 3,
+    "_verifier": "claude-code-session-2026-05-09",
+    "project_name": "Floyd's Unified Command Kernel",
+    "completion_percentage": 35,
+    "tech_stack": ["Python", "FastAPI", "JavaScript", "xterm.js", "WebSocket", "uvicorn"],
+    "complexity_score": 6,
+    "team_size_minimum": 1,
+    "go_to_market_timeline": "beta in 2-4 weeks",
+    "industry_vertical": "Developer Tools / AI Agent Infrastructure",
+    "business_model": "Self-hosted / Open Core",
+    "technical_debt": 40,
+    "scalability_needs": "low",
+    "target_users": "Solo developers and small teams managing AI agent fleets",
+    "key_features": [
+        "Terminal Console — multi-agent WebSocket PTY with xterm.js",
+        "Project Control — governance dashboard with .supercache scanning",
+        "Workspace — six-project ranking grid with live shells",
+        "Workspace Editor — MWIDE source copy (pending)",
+        "Agent Execution — agent run dispatch (pending)",
+        "System Health — application scan, disk recovery, memory monitoring",
+        "System Map — infrastructure cartography visualization",
+        "Dual Console — split terminal with layout controls"
+    ],
+    "risks": [
+        "MWIDE and Agent Execution source copies not yet performed (G3 FAIL)",
+        "Product identity labels still reference old source-app names (G1 FAIL)",
+        "Playwright browser binaries not installed, 3 workflow tests ERROR",
+        "No modules/ directory structure for copied capabilities",
+        "Single-developer project; bus factor = 1"
+    ],
+    "beta_gate_status": {
+        "G1_product_identity": "FAIL",
+        "G2_one_app_runtime": "PARTIAL",
+        "G3_copied_modules": "FAIL",
+        "G4_original_preservation": "UNKNOWN",
+        "G5_project_control": "PARTIAL",
+        "G6_operator_journeys": "UNKNOWN",
+        "G7_automated_tests": "PARTIAL",
+        "G8_documentation_authority": "PASS",
+        "G9_release_hygiene": "UNKNOWN"
+    }
+}

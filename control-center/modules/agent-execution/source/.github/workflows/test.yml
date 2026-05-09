@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd ui && npm install && cd ..
+          chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper || true
+
+      - name: Run tests
+        run: node --import tsx --test src/**/*.test.ts
+        timeout-minutes: 5
+        env:
+          ATERM_BRIDGE_TEST: "" # Bridge tests require browser — skip in CI

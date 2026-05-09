@@ -15,7 +15,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 ARTIFACTS_DIR = REPO_ROOT / "tests" / "artifacts"
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
-DEFAULT_BASE = os.environ.get("TCC_BASE", "http://localhost:9527")
+DEFAULT_BASE = os.environ.get("TCC_BASE", "http://localhost:10527")
 LAUNCHD_LABEL = "com.legacyai.tcc"
 
 

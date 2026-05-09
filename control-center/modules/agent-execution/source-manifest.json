@@ -1,0 +1,40 @@
+{
+  "capability": "agent-execution",
+  "source_name": "ATerm",
+  "source_path": "/Volumes/SanDisk1Tb/ATerm",
+  "copied_at": "2026-05-09T03:10:00-0400",
+  "source_revision": "60ec6046fb244f2a40e86c71a1e4cc0de02ecebd",
+  "copied_scope": [
+    "src/ (backend: server, pty pool, session manager, intel, mcp, bridge, tests)",
+    "ui/ (Vite/React frontend: Terminal, Sidebar, CommandPalette, StatusBar, MarksPanel)",
+    "bin/ (anvil-native-host.cj)",
+    "package.json",
+    "tsconfig.json",
+    "README.md",
+    "BLUEPRINT.md",
+    "VISION.md",
+    "FLOYD.md",
+    "LICENSE"
+  ],
+  "excluded_from_copy": [
+    ".git/",
+    "node_modules/",
+    "dist/",
+    ".DS_Store",
+    ".aterm-token (secrets)",
+    "aterm.db, aterm.db-shm, aterm.db-wal (runtime data)",
+    "bun.lock (lockfile)"
+  ],
+  "fixes_applied_in_copy": [
+    "ui/src/index.css: Added missing closing brace on :root dark theme block (pre-existing bug in ATerm)"
+  ],
+  "status": "copied — frontend built and Kernel-served; backend adaptation pending",
+  "dashboard_runtime": {
+    "route_prefix": "/agent-execution",
+    "api_prefix": "/api/agent-execution",
+    "nav_tab_id": "cb-tab-agent-exec",
+    "page_id": "cb-page-agent-exec",
+    "public_port": 10527
+  },
+  "original_preservation_check": "cd /Volumes/SanDisk1Tb/ATerm && git status — no new changes after copy; same dirty state (Issues, SSOT, server.ts, _REPORTS)"
+}

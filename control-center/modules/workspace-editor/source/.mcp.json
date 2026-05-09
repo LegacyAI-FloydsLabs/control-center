@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "aterm": {
+      "command": "/opt/homebrew/bin/node",
+      "args": ["--import", "tsx", "/Volumes/SanDisk1Tb/ATerm/src/mcp/server.ts"],
+      "env": {
+        "ATERM_URL": "http://localhost:9600",
+        "ATERM_TOKEN": "0fdcfac11015c3504abe048581434773ec6d367f5f533fb1cad6da68cfd723b5"
+      }
+    }
+  }
+}
