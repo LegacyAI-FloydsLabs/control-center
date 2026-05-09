@@ -11,7 +11,7 @@
 
 ## Agent Contract
 
-You are working on **Floyd's Unified Command Kernel** (F.U.C.K.), a Legacy AI monoapplication.
+You are working on **Floyd's Unified Command Kernel**, a Legacy AI monoapplication.
 
 `FLOYD.md` is the project-governance entrypoint. The authoritative product architecture, integration rule, beta gates, remaining work, verification log, and supersession policy live in `SSOT/control-center_SSOT.md`.
 
@@ -36,7 +36,7 @@ If this file conflicts with `SSOT/control-center_SSOT.md` on product facts, the 
 
 | Field            | Value                                                                                                                                                    |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name             | Floyd's Unified Command Kernel (F.U.C.K.)                                                                                                                                                |
+| Name             | Floyd's Unified Command Kernel                                                                                                                                                |
 | Purpose          | One Legacy AI monoapplication that copies reusable source-app code into Kernel-owned internal capabilities and drives projects toward beta readiness. |
 | Primary Language | Python + JavaScript                                                                                                                                      |
 | Framework        | FastAPI backend; zero-build vanilla JavaScript frontend                                                                                                  |

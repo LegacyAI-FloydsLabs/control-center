@@ -1,5 +1,5 @@
 """
-DOGFOOD Test Suite — F.U.C.K. Comprehensive Browser Testing
+DOGFOOD Test Suite — The Kernel Comprehensive Browser Testing
 Tests every tab, every link, every component, every human touchpoint.
 Produces a detailed log at tests/dogfood_log.json
 """
@@ -120,16 +120,16 @@ def test_shell(page: Page):
     else:
         fail(page, pn, "sidebar", "Visible", ".sidebar not found")
 
-    # Brand title with F.U.C.K. animation
-    brand = page.locator(".fuck-brand")
+    # Brand title with The Kernel animation
+    brand = page.locator(".kernel-brand")
     if brand.count() > 0:
         txt = brand.inner_text()
         if "F" in txt and "U" in txt and "C" in txt and "K" in txt:
-            check(page, pn, "brand title", "F.U.C.K. visible", txt[:40])
+            check(page, pn, "brand title", "The Kernel visible", txt[:40])
         else:
-            fail(page, pn, "brand title", "F.U.C.K. visible", f"Got: {txt}")
+            fail(page, pn, "brand title", "The Kernel visible", f"Got: {txt}")
     else:
-        fail(page, pn, "brand title", "F.U.C.K. visible", ".fuck-brand not found")
+        fail(page, pn, "brand title", "The Kernel visible", ".kernel-brand not found")
 
     # Hero image
     hero = page.locator("img.fuck-hero")
@@ -822,7 +822,7 @@ def test_no_console_errors(page: Page):
 
 def main():
     print("=" * 70)
-    print("F.U.C.K. DOGFOOD TEST — Comprehensive Browser Testing")
+    print("The Kernel DOGFOOD TEST — Comprehensive Browser Testing")
     print("=" * 70)
     print()
 

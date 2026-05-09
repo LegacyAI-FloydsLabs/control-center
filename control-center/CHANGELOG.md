@@ -8,7 +8,7 @@
 
 ---
 
-All notable changes to Floyd's Unified Command Kernel (F.U.C.K.) are documented here. Dates are real. Commit hashes are real. The tone is what happens when you write release notes at 2:47 AM.
+All notable changes to the Kernel are documented here. Dates are real. Commit hashes are real. The tone is what happens when you write release notes at 2:47 AM.
 
 The format is: what happened, when it happened, and why it happened. No semantic versioning theater. No "we're thrilled to announce." Just the record.
 

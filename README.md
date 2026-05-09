@@ -2,7 +2,9 @@
 
 ![Floyd's Unified Command Kernel](FloydsUnifiedCommandKernal.jpeg)
 
-## Or: One App To Rule The Garage
+*One command surface. Every Legacy AI capability wired into it. Built in a garage because the existing options annoyed us.*
+
+---
 
 **DOCUMENT CLASSIFICATION:** README / Anti-Corporate
 **DATE RECORDED:** 2026-05-09 — Probably Past Bedtime
@@ -12,11 +14,13 @@
 
 ---
 
-One command surface. Every Legacy AI capability wired into it. Built in a garage because the existing options annoyed us.
+## What This Thing Is
 
-Floyd's Unified Command Kernel — F.U.C.K. for short, because we name things the way we want to — is not a shell. It's not a launcher. It's not a collection of iframes wearing a trench coat and pretending to be integrated.
+The Kernel is not a shell. It's not a launcher. It's not a collection of iframes wearing a trench coat and pretending to be integrated.
 
 It is **one application**. Terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — all copied in, all adapted, all owned by the Kernel. The originals stay standalone and untouched because that's how reuse actually works.
+
+Some people think the initials mean something. Those people need to get their minds out of the gutter. It stands for Floyd's Unified Command Kernel. That's it. Nothing else. Stop snickering. Bella is judging you.
 
 ---
 
@@ -90,9 +94,14 @@ Then open `http://localhost:10527/`. That's it. No Docker, no Kubernetes manifes
 
 ---
 
-## The Name
+## The Cats
 
-Yes, the acronym is intentional. Floyd's Labs is a garage in Brown County. We answer to cats, not shareholders. Bella handles QA. Bowser monitors the router. Neither of them has ever said "let's circle back on the naming convention."
+Floyd's Labs is a garage in Brown County, Indiana. We answer to cats, not shareholders.
+
+- **Bella** — Senior Quality Assurance. A black cat of substantial carriage who walks on keyboards and has never filed a false-positive bug report.
+- **Bowser** — Technical Director. Skinny. Monitors the router. Judges your latency.
+
+Neither of them has ever said "let's circle back on the naming convention." Neither of them knows what an acronym is. They're cats.
 
 ---
 
@@ -103,4 +112,5 @@ Yes, the acronym is intentional. Floyd's Labs is a garage in Brown County. We an
 │  Cat Supervision:  Bella (QA) and Bowser (Networking)     │
 │  Lines of Code:    11,599 Python + whole lotta TypeScript │
 │  Corporate Feelings: HURT (intended)                       │
+│  Acronym Meaning:   Floyd's Unified Command Kernel ONLY   │
 └──────────────────────────────────────────────────────────┘

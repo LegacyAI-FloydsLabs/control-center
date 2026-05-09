@@ -1,4 +1,4 @@
-# F.U.C.K. — Release Manifest
+# The Kernel — Release Manifest
 
 ## Or: What We Built While The Cats Were Asleep On The Keyboard
 
@@ -10,7 +10,7 @@
 
 ---
 
-This is the release manifest for Floyd's Unified Command Kernel — F.U.C.K. — the monoapplication that replaced a drawer full of disconnected tools with one command surface that actually works.
+This is the release manifest for the Kernel — the monoapplication that replaced a drawer full of disconnected tools with one command surface that actually works.
 
 We didn't raise money. We didn't form a committee. We didn't write a mission statement and then hire someone to execute it. We built a thing in a garage because the things that existed weren't good enough, and spite is a perfectly valid engineering motivation.
 
@@ -18,7 +18,7 @@ We didn't raise money. We didn't form a committee. We didn't write a mission sta
 
 ## The Product
 
-F.U.C.K. is one FastAPI application on port 10527. Python backend. Zero-build vanilla JavaScript frontend. No bundler config. No dependency tree that looks like a conspiracy wall. It runs, it serves, it tests, it ships.
+One FastAPI application on port 10527. Python backend. Zero-build vanilla JavaScript frontend. No bundler config. No dependency tree that looks like a conspiracy wall. It runs, it serves, it tests, it ships.
 
 Every Legacy AI capability — terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — lives inside this monorepo as copied-and-adapted internal modules. The originals stay standalone. We copy code because that's what integration actually means when you're not trying to sell someone an integration platform.
 
@@ -45,7 +45,7 @@ They all pass. Not "mostly pass." Not "pass on my machine." They pass. That's th
 Full code editor injected directly into the Kernel DOM. Not in an iframe. Not in a popup. In the application. Where it belongs.
 
 ### Theme System
-Tokyo Night dark theme. CSS custom properties. Runtime switching. The letters F.U.C.K. cycle colors because we earned that much self-indulgence.
+Tokyo Night dark theme. CSS custom properties. Runtime switching. The title letters cycle colors because we earned that much self-indulgence and Bella walked across the keyboard during the CSS review and honestly it looked better after.
 
 ### WCAG AA Compliance
 Contrast ratios checked. Keyboard navigation works. ARIA labels present. Accessibility isn't a checkbox exercise — it's how you build things that don't exclude people.
@@ -54,7 +54,7 @@ Contrast ratios checked. Keyboard navigation works. ARIA labels present. Accessi
 
 ## The Architecture
 
-One application. Not microservices. Not a service mesh. Not twelve containers communicating through a message queue that nobody can debug.
+One application. Not microservices. Not a service mesh. Not twelve containers communicating through a message queue that nobody can debug at 3 AM when it inevitably breaks.
 
 ```
 FastAPI backend → vanilla JS frontend → 11 tabs → done
@@ -91,7 +91,7 @@ Not everything is live. We're not going to pretend stubs are features and hope n
 - **ATerm broadcast/search/history** — handlers exist, return placeholder data. The plumbing's there; the logic isn't.
 - **ATerm MCP server** — exists in source, not wired into the Kernel.
 - **ATerm bridge (anvil-client)** — exists in source, not copied into the module.
-- **Collab WebSocket UI** — backend is live, frontend code exists, nobody's wired them together yet.
+- **Collab WebSocket UI** — backend is live, frontend code exists, nobody's wired them together yet. The pipe works. Nobody's turned on the faucet.
 - **Workspace Editor pty-hub** — MWIDE frontend is copied, the full workspace-aware terminal backend isn't.
 - **Bootstrap/Finisher verification** — endpoints exist, integration testing pending.
 
@@ -118,13 +118,7 @@ QA Director: Bella. A black cat of substantial carriage who walks on keyboards a
 
 Technical Director: Bowser. A skinny black cat who monitors the router and judges your latency.
 
-Neither of them has ever used the word "stakeholder."
-
----
-
-## The License
-
-It's ours. We built it. The code lives in the repo. The cats approve.
+Neither of them has ever used the word "stakeholder." Neither of them knows what an acronym is. They're cats.
 
 ---
 

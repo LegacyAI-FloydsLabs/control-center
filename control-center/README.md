@@ -12,7 +12,7 @@
 
 One command surface. Every Legacy AI capability wired into it. Built in a garage because the existing options annoyed us.
 
-Floyd's Unified Command Kernel — F.U.C.K. for short, because we name things the way we want to — is not a shell. It's not a launcher. It's not a collection of iframes wearing a trench coat and pretending to be integrated.
+Floyd's Unified Command Kernel is not a shell. It's not a launcher. It's not a collection of iframes wearing a trench coat and pretending to be integrated.
 
 It is **one application**. Terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — all copied in, all adapted, all owned by the Kernel. The originals stay standalone and untouched because that's how reuse actually works.
 

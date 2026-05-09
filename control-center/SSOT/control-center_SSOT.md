@@ -4,19 +4,18 @@
 **Last Updated:** 2026-05-09T11:10:00-0400
 **Governance:** .supercache/ v1.7.0
 **Project path:** `/Volumes/Storage/Legacy Agents/control-center/`
-**Product name:** Floyd's Unified Command Kernel (F.U.C.K.)
+**Product name:** Floyd's Unified Command Kernel
 **Implementation directory:** `control-center/`
-**Acronym:** F.U.C.K. — intentional branding, Floyd's Labs voice
 
 ---
 
 ## Authority
 
-This document is the **single source of truth** for F.U.C.K.'s architecture, product identity, integration model, beta-release requirements, and remaining work.
+This document is the **single source of truth** for the Kernel's architecture, product identity, integration model, beta-release requirements, and remaining work.
 
 If any roadmap, plan, README, inherited Terminal Control Center document, MWIDE port note, iframe note, launcher note, or module-specific document conflicts with this SSOT, this SSOT wins. Conflicting documents are quarantine candidates under `.supercache/contracts/repo-sanitation.md`.
 
-The original source applications remain standalone products. F.U.C.K. receives copied source code from those applications and turns those copies into Kernel-owned internal capabilities.
+The original source applications remain standalone products. The Kernel receives copied source code from those applications and turns those copies into Kernel-owned internal capabilities.
 
 ---
 
@@ -44,19 +43,19 @@ When reading this SSOT for work:
 
 ## Product Identity
 
-Floyd's Unified Command Kernel (F.U.C.K.) is one monoapplication consolidating Legacy AI capabilities. It is NOT a shell around older apps.
+Floyd's Unified Command Kernel is one monoapplication consolidating Legacy AI capabilities. It is NOT a shell around older apps.
 
 The Kernel owns:
 
-- product name, acronym, and brand voice
+- product name and brand voice
 - routes, ports, UI labels, navigation
 - state model, persistence, tests, documentation, release commit
 
 ### Brand Identity
 
 - **Title**: Floyd's Unified Command Kernel
-- **Acronym**: F.U.C.K.
-- **Title styling**: F, U, C, K letters bold with Tokyo Night CSS color cycling (`@keyframes fuck-color-sync`)
+- **Title**: Floyd's Unified Command Kernel
+- **Title styling**: Title letters bold with Tokyo Night CSS color cycling (`@keyframes kernel-color-sync`)
 - **Hero image**: `static/hero-text.png` (36231 bytes, 1728x128 PNG)
 - **Brand voice**: Floyd's Labs — builder-first, anti-corporate, caffeinated, technically competent
 
@@ -64,11 +63,11 @@ The Kernel owns:
 
 ## Source-App Copy Rule
 
-When integrating source applications into F.U.C.K.:
+When integrating source applications into the Kernel:
 
 1. **COPY** the source application code into Kernel-owned module paths.
 2. **NEVER** modify original source applications.
-3. Adapt the copied code to work within F.U.C.K.'s architecture (same DOM, same origin).
+3. Adapt the copied code to work within the Kernel's architecture (same DOM, same origin).
 4. Originals live at:
    - MWIDE: `/Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE/` — untouched
    - ATerm: `/Volumes/SanDisk1Tb/ATerm/` — untouched
@@ -78,7 +77,7 @@ When integrating source applications into F.U.C.K.:
 
 ## Non-Replacement Rule
 
-Original source applications are standalone reusable products. F.U.C.K. owns its copied implementation, not the original. This rule is absolute.
+Original source applications are standalone reusable products. The Kernel owns its copied implementation, not the original. This rule is absolute.
 
 ---
 
@@ -170,7 +169,7 @@ Project Control · Terminal Console · Dual Console · Workspace · Workspace Ed
 
 | Date       | Decision                                                      | Rationale                                                                    | Decided By     |
 | ---------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------- |
-| 2026-05-09 | Product renamed to Floyd's Unified Command Kernel (F.U.C.K.)  | User branding decision                                                       | Douglas Talley |
+| 2026-05-09 | Product renamed to Floyd's Unified Command Kernel | User branding decision                                                       | Douglas Talley |
 | 2026-05-09 | Iframe permission granted for self-contained standalone pages | Dev-Launcher, Spend Watch, Mac Cleanup are full apps requiring DOM isolation | Douglas Talley |
 | 2026-05-09 | file:// links replaced with /api/fs/serve?path=               | Browsers block file:// from http:// origin                                   | Agent          |
 | 2026-05-09 | DeepSeek API key vaulted                                      | Key stored in vault for LLM proxy use                                        | Agent          |
@@ -224,7 +223,7 @@ Project Control · Terminal Console · Dual Console · Workspace · Workspace Ed
 
 | Date       | Change                                                                                                                                                                                                               | Agent  |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 2026-05-09 | Full SSOT rewrite: renamed product to F.U.C.K., added 3 new tabs (Dev Launcher, Spend Watch, Mac Cleanup), documented WebSocket endpoints, updated architecture, recorded iframe permission for self-contained pages | Claude |
+| 2026-05-09 | Full SSOT rewrite: product identity established, added 3 new tabs (Dev Launcher, Spend Watch, Mac Cleanup), documented WebSocket endpoints, updated architecture, recorded iframe permission for self-contained pages | Claude |
 | 2026-05-03 | Initial SSOT creation                                                                                                                                                                                                | Claude |
 
 ---

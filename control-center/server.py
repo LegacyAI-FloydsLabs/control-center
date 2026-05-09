@@ -994,12 +994,27 @@ async def lifespan(app: FastAPI):
     # Start cron scheduler in the background
     cron_task = asyncio.create_task(_cron_scheduler_loop())
     logger.info("cron scheduler started")
+    # Start auto-cleaner
+    global _autoclean_task
+    _autoclean_task = asyncio.create_task(_autoclean_loop())
+    logger.info(
+        "Auto-cleaner started (interval=%ds, idle=%ds)",
+        AUTO_CLEAN_INTERVAL_SECONDS,
+        AUTO_CLEAN_DEFAULT_IDLE_SECONDS,
+    )
     yield
     cron_task.cancel()
+    if _autoclean_task:
+        _autoclean_task.cancel()
     try:
         await cron_task
     except asyncio.CancelledError:
         pass
+    if _autoclean_task:
+        try:
+            await _autoclean_task
+        except asyncio.CancelledError:
+            pass
     for agent_id in list(running_processes):
         await kill_process(agent_id)
 
@@ -1983,6 +1998,118 @@ async def delete_agent(agent_id: str):
     agent_metrics.pop(agent_id, None)
     _cron_last_fire.pop(agent_id, None)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Auto-cleaner: removes stale ephemeral/sidepanel shells that have been idle.
+# ---------------------------------------------------------------------------
+_autoclean_task: asyncio.Task | None = None
+AUTO_CLEAN_DEFAULT_IDLE_SECONDS = 3600  # 1 hour
+AUTO_CLEAN_INTERVAL_SECONDS = 600  # check every 10 min
+
+
+async def _autoclean_loop():
+    """Background coroutine that periodically purges idle ephemeral agents."""
+    while True:
+        await asyncio.sleep(AUTO_CLEAN_INTERVAL_SECONDS)
+        try:
+            agents = load_agents()
+            now = time.time()
+            removed = []
+            for aid, agent in list(agents.items()):
+                tags = agent.get("tags", [])
+                # Only auto-remove ephemeral sidepanel/workspace shells
+                if "ephemeral" not in tags:
+                    continue
+                # Check idle time: if running, look at uptime; if stopped, always clean
+                if aid in running_processes:
+                    h = running_processes[aid]
+                    if h.alive:
+                        # Still alive — check how long it's been running
+                        uptime = now - h.started_at
+                        if uptime < AUTO_CLEAN_DEFAULT_IDLE_SECONDS:
+                            continue  # young process, keep it
+                # Safe to remove
+                await kill_process(aid)
+                _remove_launchd_plist(aid)
+                del agents[aid]
+                agent_metrics.pop(aid, None)
+                _cron_last_fire.pop(aid, None)
+                removed.append(agent.get("name", aid))
+            if removed:
+                save_agents(agents)
+                logger.info(
+                    "Auto-cleaner removed %d stale agents: %s",
+                    len(removed),
+                    ", ".join(removed[:10]),
+                )
+        except Exception:
+            logger.exception("Auto-cleaner error")
+
+
+@app.post("/api/autoclean")
+async def autoclean_now(
+    idle_seconds: int = AUTO_CLEAN_DEFAULT_IDLE_SECONDS,
+    tags: str = "ephemeral",
+):
+    """Run an immediate cleanup of idle agents matching the given tags."""
+    agents = load_agents()
+    now = time.time()
+    target_tags = {t.strip() for t in tags.split(",")}
+    removed = []
+    for aid, agent in list(agents.items()):
+        agent_tags = set(agent.get("tags", []))
+        if not target_tags & agent_tags:
+            continue
+        if aid in running_processes:
+            h = running_processes[aid]
+            if h.alive:
+                uptime = now - h.started_at
+                if uptime < idle_seconds:
+                    continue
+        await kill_process(aid)
+        _remove_launchd_plist(aid)
+        del agents[aid]
+        agent_metrics.pop(aid, None)
+        _cron_last_fire.pop(aid, None)
+        removed.append({"id": aid, "name": agent.get("name", aid)})
+    if removed:
+        save_agents(agents)
+    return {"removed": len(removed), "details": removed}
+
+
+@app.get("/api/autoclean/status")
+async def autoclean_status():
+    """Return auto-cleaner config and current stale count."""
+    agents = load_agents()
+    now = time.time()
+    stale = 0
+    for aid, agent in agents.items():
+        if "ephemeral" not in agent.get("tags", []):
+            continue
+        if aid in running_processes:
+            h = running_processes[aid]
+            if h.alive and (now - h.started_at) < AUTO_CLEAN_DEFAULT_IDLE_SECONDS:
+                continue
+        stale += 1
+    return {
+        "enabled": _autoclean_task is not None and not _autoclean_task.done(),
+        "interval_seconds": AUTO_CLEAN_INTERVAL_SECONDS,
+        "idle_threshold_seconds": AUTO_CLEAN_DEFAULT_IDLE_SECONDS,
+        "stale_count": stale,
+        "total_agents": len(agents),
+    }
+
+
+@app.on_event("startup")
+async def _start_autoclean():
+    global _autoclean_task
+    _autoclean_task = asyncio.create_task(_autoclean_loop())
+    logger.info(
+        "Auto-cleaner started (interval=%ds, idle=%ds)",
+        AUTO_CLEAN_INTERVAL_SECONDS,
+        AUTO_CLEAN_DEFAULT_IDLE_SECONDS,
+    )
 
 
 @app.get("/api/agents/{agent_id}/status")

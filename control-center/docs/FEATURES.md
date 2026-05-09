@@ -1,17 +1,17 @@
-# F.U.C.K. — Technical Feature Reference
+# The Kernel — Technical Feature Reference
 
-## Or: Everything The Kernel Does (And What It's Saving For Later)
+## Or: Everything It Does (And What It's Saving For Later)
 
 **DOCUMENT CLASSIFICATION:** Technical Reference / Factual
 **DATE RECORDED:** 2026-05-09
-**PRODUCT:** Floyd's Unified Command Kernel (F.U.C.K.)
+**PRODUCT:** Floyd's Unified Command Kernel
 **KERNEL PORT:** 10527
 
 ---
 
 ## Overview
 
-F.U.C.K. is a single monoapplication. It consolidates seven Legacy AI capabilities into one FastAPI backend with a zero-build vanilla JavaScript frontend, served from port 10527. Every module lives inside the Kernel's `modules/` directory as copied-and-adapted source — not iframes, not adapters, not a launcher pretending to be integration.
+The Kernel is a single monoapplication. It consolidates seven Legacy AI capabilities into one FastAPI backend with a zero-build vanilla JavaScript frontend, served from port 10527. Every module lives inside the Kernel's `modules/` directory as copied-and-adapted source — not iframes, not adapters, not a launcher pretending to be integration.
 
 This document covers every feature the Kernel ships: what's live, what's wired but stubbed, and what's latent infrastructure waiting for a consumer.
 
@@ -130,7 +130,7 @@ This document covers every feature the Kernel ships: what's live, what's wired b
 
 - Tokyo Night-inspired dark theme
 - CSS custom properties with runtime switching
-- `@keyframes fuck-color-sync` for branded title cycling
+- Branded title color cycling via keyframes
 - WCAG AA contrast compliance on all themed surfaces
 
 ### Responsive Layout
