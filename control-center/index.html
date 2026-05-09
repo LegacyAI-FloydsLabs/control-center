@@ -1852,10 +1852,265 @@
         color: var(--text-bright);
         opacity: 0.8;
       }
+
+      /* ============================== */
+      /* HAMBURGER MENU (hidden desktop) */
+      /* ============================== */
+      .cb-hamburger {
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .cb-hamburger span {
+        display: block;
+        width: 100%;
+        height: 2px;
+        background: var(--text);
+        border-radius: 1px;
+        transition:
+          transform 0.2s,
+          opacity 0.2s;
+      }
+      .cb-hamburger.open span:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+      }
+      .cb-hamburger.open span:nth-child(2) {
+        opacity: 0;
+      }
+      .cb-hamburger.open span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+      }
+
+      /* Nav scroll container */
+      .cb-nav-scroll {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        overflow-x: auto;
+        flex: 1;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .cb-nav-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* Sidebar overlay backdrop */
+      .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .sidebar-backdrop.visible {
+        display: block;
+        opacity: 1;
+      }
+
+      /* =================================== */
+      /* RESPONSIVE — Tablet (≤ 1024px)      */
+      /* =================================== */
+      @media (max-width: 1024px) {
+        :root,
+        [data-theme="light"] {
+          --sidebar-width: 240px;
+        }
+        .cb-nav-tab {
+          padding: 8px 12px;
+          font-size: 0.78rem;
+        }
+        .cb-nav-meta {
+          display: none;
+        }
+        .grid-container {
+          grid-template-columns: 1fr;
+        }
+        .grid-container.layout-2x1 {
+          grid-template-columns: 1fr;
+        }
+        .gov-card {
+          min-width: 0;
+        }
+      }
+
+      /* =================================== */
+      /* RESPONSIVE — Mobile (≤ 768px)       */
+      /* =================================== */
+      @media (max-width: 768px) {
+        /* Grid: sidebar overlays instead of push */
+        body {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr auto;
+        }
+
+        /* Sidebar becomes fixed overlay */
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          width: var(--sidebar-width);
+          z-index: 1000;
+          transform: translateX(-100%);
+          opacity: 0;
+          pointer-events: none;
+          transition:
+            transform 0.25s ease,
+            opacity 0.25s ease;
+        }
+        body.sidebar-open .sidebar {
+          transform: translateX(0);
+          opacity: 1;
+          pointer-events: all;
+        }
+
+        /* Show hamburger */
+        .cb-hamburger {
+          display: flex;
+        }
+
+        /* Nav tabs scroll horizontally */
+        .cb-nav {
+          padding: 0 4px;
+        }
+        .cb-nav-scroll {
+          gap: 0;
+        }
+        .cb-nav-tab {
+          padding: 8px 10px;
+          font-size: 0.74rem;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .cb-nav-meta {
+          display: none;
+        }
+
+        /* Hero image smaller */
+        .fuck-hero {
+          max-height: 32px;
+        }
+
+        /* Cards: single column, full width */
+        .grid-container {
+          grid-template-columns: 1fr;
+        }
+        .grid-container.layout-2x1 {
+          grid-template-columns: 1fr;
+        }
+        .gov-card {
+          min-width: 0;
+        }
+
+        /* Governance page compact */
+        .gov-page {
+          padding: 8px;
+        }
+        .gov-card {
+          padding: 10px;
+        }
+        .gov-card-head {
+          flex-wrap: wrap;
+        }
+        .gov-card-pct {
+          font-size: 0.8rem;
+        }
+
+        /* Sidebar sections compact */
+        .sidebar-section {
+          padding: 12px;
+        }
+
+        /* Terminal frames fill width */
+        .terminal-frame {
+          min-width: 0;
+        }
+
+        /* MWIDE workspace editor fill */
+        .mwide-frame-container {
+          min-width: 0;
+        }
+
+        /* Health table responsive */
+        .health-table {
+          font-size: 0.75rem;
+        }
+        .health-table th,
+        .health-table td {
+          padding: 4px 6px;
+        }
+
+        /* Status bar compact */
+        .status-bar {
+          font-size: 0.68rem;
+          gap: 6px;
+          padding: 3px 8px;
+        }
+      }
+
+      /* =================================== */
+      /* RESPONSIVE — Small mobile (≤ 480px)  */
+      /* =================================== */
+      @media (max-width: 480px) {
+        :root,
+        [data-theme="light"] {
+          --sidebar-width: 260px;
+        }
+        .cb-nav-tab {
+          padding: 7px 8px;
+          font-size: 0.7rem;
+        }
+        .fuck-hero {
+          max-height: 24px;
+        }
+        .sidebar-section {
+          padding: 10px;
+        }
+        .sidebar-section h3 {
+          font-size: 0.7rem;
+        }
+        .form-group input,
+        .form-group select {
+          font-size: 0.82rem;
+        }
+        .btn {
+          padding: 6px 10px;
+          font-size: 0.78rem;
+        }
+        .btn-icon {
+          width: 28px;
+          height: 28px;
+          font-size: 0.9rem;
+        }
+        .gov-card {
+          padding: 8px;
+          border-radius: 6px;
+        }
+        .status-bar {
+          font-size: 0.62rem;
+          gap: 4px;
+          padding: 2px 6px;
+        }
+        .cb-nav {
+          gap: 0;
+        }
+      }
     </style>
   </head>
   <body>
     <!-- Sidebar -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
     <div class="sidebar">
       <div class="sidebar-section">
         <h3>Add Agent</h3>
@@ -2214,66 +2469,81 @@
       <!-- Kernel top-level navigation -->
       <nav class="cb-nav" id="cb-nav" aria-label="Kernel pages">
         <button
-          class="cb-nav-tab active"
-          data-cb-page="governance"
-          id="cb-tab-governance"
+          class="cb-hamburger"
+          id="cb-hamburger"
+          aria-label="Toggle sidebar"
+          title="Menu"
         >
-          Project Control
+          <span></span><span></span><span></span>
         </button>
-        <button
-          class="cb-nav-tab"
-          data-cb-page="terminals"
-          id="cb-tab-terminals"
-        >
-          Terminal Console
-        </button>
-        <button class="cb-nav-tab" data-cb-page="dualterm" id="cb-tab-dualterm">
-          Dual Console
-        </button>
-        <button
-          class="cb-nav-tab"
-          data-cb-page="workspace"
-          id="cb-tab-workspace"
-        >
-          Workspace
-        </button>
-        <button class="cb-nav-tab" data-cb-page="mwide" id="cb-tab-mwide">
-          Workspace Editor
-        </button>
-        <button class="cb-nav-tab" data-cb-page="health" id="cb-tab-health">
-          System Health
-        </button>
-        <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">
-          System Map
-        </button>
-        <button
-          class="cb-nav-tab"
-          data-cb-page="agent-exec"
-          id="cb-tab-agent-exec"
-        >
-          Agent Execution
-        </button>
-        <button
-          class="cb-nav-tab"
-          data-cb-page="dev-launcher"
-          id="cb-tab-dev-launcher"
-        >
-          Dev Launcher
-        </button>
-        <button
-          class="cb-nav-tab"
-          data-cb-page="spend-watch"
-          id="cb-tab-spend-watch"
-        >
-          Spend Watch
-        </button>
-        <button
-          class="cb-nav-tab"
-          data-cb-page="mac-cleanup"
-          id="cb-tab-mac-cleanup"
-        >
-          Mac Cleanup
-        </button>
+        <div class="cb-nav-scroll" id="cb-nav-scroll">
+          <button
+            class="cb-nav-tab active"
+            data-cb-page="governance"
+            id="cb-tab-governance"
+          >
+            Project Control
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="terminals"
+            id="cb-tab-terminals"
+          >
+            Terminal Console
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="dualterm"
+            id="cb-tab-dualterm"
+          >
+            Dual Console
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="workspace"
+            id="cb-tab-workspace"
+          >
+            Workspace
+          </button>
+          <button class="cb-nav-tab" data-cb-page="mwide" id="cb-tab-mwide">
+            Workspace Editor
+          </button>
+          <button class="cb-nav-tab" data-cb-page="health" id="cb-tab-health">
+            System Health
+          </button>
+          <button class="cb-nav-tab" data-cb-page="embed" id="cb-tab-embed">
+            System Map
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="agent-exec"
+            id="cb-tab-agent-exec"
+          >
+            Agent Execution
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="dev-launcher"
+            id="cb-tab-dev-launcher"
+          >
+            Dev Launcher
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="spend-watch"
+            id="cb-tab-spend-watch"
+          >
+            Spend Watch
+          </button>
+          <button
+            class="cb-nav-tab"
+            data-cb-page="mac-cleanup"
+            id="cb-tab-mac-cleanup"
+          >
+            Mac Cleanup
+          </button>
+        </div>
+        <!-- /cb-nav-scroll -->
         <span class="cb-nav-spacer"></span>
         <span class="cb-nav-meta" id="cb-nav-meta">
           <span
@@ -4809,6 +5079,25 @@
           });
 
         // ---- Init ----
+        // Hamburger / mobile sidebar toggle
+        (function initHamburger() {
+          const burger = document.getElementById("cb-hamburger");
+          const backdrop = document.getElementById("sidebar-backdrop");
+          if (!burger) return;
+          burger.addEventListener("click", () => {
+            document.body.classList.toggle("sidebar-open");
+            burger.classList.toggle("open");
+            if (backdrop) backdrop.classList.toggle("visible");
+          });
+          if (backdrop) {
+            backdrop.addEventListener("click", () => {
+              document.body.classList.remove("sidebar-open");
+              burger.classList.remove("open");
+              backdrop.classList.remove("visible");
+            });
+          }
+        })();
+
         async function init() {
           initTheme();
           initSidebar();
