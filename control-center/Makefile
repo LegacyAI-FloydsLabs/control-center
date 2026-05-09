@@ -10,7 +10,7 @@ venv: ## Create virtual environment and install dependencies
 install: ## Install Python dependencies (requires active venv — use 'make venv' first)
 	pip install -r requirements.txt
 
-run: ## Start the ControlBoard server on port 10527 (or PORT env var)
+run: ## Start the Kernel server on port 10527 (or PORT env var)
 	python server.py
 
 dev: ## Start with auto-reload (development)
@@ -24,7 +24,7 @@ test: test-api test-ui test-automation ## Run the full non-proof test suite (API
 test-api: ## Fast HTTP smoke tests against a running server
 	.venv/bin/pytest tests/test_api_smoke.py -v
 
-test-ui: ## Headless Playwright tests for the top-3 human workflows
+test-ui: ## Headless Playwright tests for the top workflows
 	.venv/bin/pytest tests/test_workflows_ui.py -v
 
 test-automation: ## End-to-end CRON + launchd integration tests (skips slow cron fire)

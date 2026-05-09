@@ -1,4 +1,4 @@
-# Dashboard — CLAUDE.md
+# Floyd's Unified Command Kernel — CLAUDE.md
 
 **Version:** 1.0.0
 **Initialized:** 2026-04-30
@@ -9,7 +9,7 @@
 
 ## Relationship to FLOYD.md and SSOT
 
-`FLOYD.md` is the project-governance entrypoint. `SSOT/control-center_SSOT.md` is authoritative for Dashboard product facts, architecture decisions, beta gates, remaining work, and verification records.
+`FLOYD.md` is the project-governance entrypoint. `SSOT/control-center_SSOT.md` is authoritative for Kernel product facts, architecture decisions, beta gates, remaining work, and verification records.
 
 This file is only the Claude-specific adapter. If this file conflicts with FLOYD.md or the SSOT on project facts, the SSOT wins.
 
@@ -17,15 +17,15 @@ This file is only the Claude-specific adapter. If this file conflicts with FLOYD
 
 ## Agent Role on This Project
 
-Claude/Floyd on Dashboard operates as a high-reliability implementation and verification agent.
+Claude/Floyd on the Kernel operates as a high-reliability implementation and verification agent.
 
 Primary obligations:
 
-- preserve Dashboard as one coherent monoapplication
-- copy actual source-app code into Dashboard-owned paths before adaptation
+- preserve the Kernel as one coherent monoapplication
+- copy actual source-app code into Kernel-owned paths before adaptation
 - keep original source applications standalone and untouched unless explicitly tasked otherwise
 - reject iframe/launcher/adapter-only final integrations unless the SSOT is updated by user decision
-- maintain Dashboard-native naming, routing, port, state, docs, and tests
+- maintain Kernel-native naming, routing, port, state, docs, and tests
 - quarantine superseded docs instead of deleting them
 - produce evidence before status claims
 
@@ -35,11 +35,11 @@ Primary obligations:
 
 | # | Rule | Rationale |
 |---|---|---|
-| C1 | Do not edit original source apps as part of Dashboard integration. | Source apps remain standalone reusable products. |
-| C2 | Start copied-module work by copying actual source code into Dashboard. | User explicitly rejected inspiration rewrites. |
-| C3 | Do not preserve source-app names as final user-facing Dashboard module names. | Dashboard is one new product. |
+| C1 | Do not edit original source apps as part of Kernel integration. | Source apps remain standalone reusable products. |
+| C2 | Start copied-module work by copying actual source code into the Kernel. | User explicitly rejected inspiration rewrites. |
+| C3 | Do not preserve source-app names as final user-facing Kernel module names. | The Kernel is one new product. |
 | C4 | Any SSOT or doc change must check for conflicting active docs and quarantine superseded files. | Prevents stale plans from misleading future sessions. |
-| C5 | Before claiming beta readiness, run app tests and browser/API smoke for the complete operator journey. | Dashboard beta is behavioral, not just textual or compile-level. |
+| C5 | Before claiming beta readiness, run app tests and browser/API smoke for the complete operator journey. | Kernel beta is behavioral, not just textual or compile-level. |
 | C6 | Never write to `/Volumes/SanDisk1Tb/.supercache/`. | Global governance is read-only for agents. |
 
 ---

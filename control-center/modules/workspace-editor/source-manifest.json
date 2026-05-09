@@ -1,0 +1,36 @@
+{
+  "capability": "workspace-editor",
+  "source_name": "MWIDE / mobile-web-IDE",
+  "source_path": "/Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE",
+  "copied_at": "2026-05-09T01:50:00-0400",
+  "source_revision": "de2b4fff705aadb97805036577a08518b1e49c89",
+  "copied_scope": [
+    "server.ts",
+    "pty-hub.ts",
+    "src/ (React/TypeScript frontend: 44 files)",
+    "public/ (fonts, icons)",
+    "package.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    "index.html",
+    ".env.example",
+    "metadata.json"
+  ],
+  "excluded_from_copy": [
+    ".git/",
+    "node_modules/",
+    "dist/",
+    "dev-dist/",
+    ".env (secrets)",
+    ".DS_Store",
+    "*.backup files",
+    "server.ts.bak-phase1"
+  ],
+  "status": "copied — adaptation to Kernel runtime pending",
+  "dashboard_runtime": {
+    "route_prefix": "/workspace-editor",
+    "api_prefix": "/api/workspace-editor",
+    "public_port": 10527
+  },
+  "original_preservation_check": "cd /Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE && git status — no new changes after copy; same dirty state as before (pre-existing edits to pty-hub.ts, Terminal.tsx, TerminalPane.tsx, index.css)"
+}

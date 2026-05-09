@@ -11,19 +11,26 @@ import termios
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Mapping, Optional
+from urllib.parse import quote as _url_quote
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import FileResponse, Response
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+    Request,
+)
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 import uvicorn
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("tcc")
+logger = logging.getLogger("fuck")
 
 
 # ---------------------------------------------------------------------------
@@ -46,7 +53,9 @@ class AgentCreate(BaseModel):
     launchd_type: Literal["none", "timer", "hook", "keepalive"] = "none"
     launchd_interval: int = 3600
     launchd_watchpath: str = ""
-    cron_expression: Optional[str] = None  # e.g. "0 * * * *" (minute hour day month weekday)
+    cron_expression: Optional[str] = (
+        None  # e.g. "0 * * * *" (minute hour day month weekday)
+    )
 
     @field_validator("name")
     @classmethod
@@ -78,7 +87,9 @@ class AgentCreate(BaseModel):
             return v
         parts = v.strip().split()
         if len(parts) != 5:
-            raise ValueError("cron_expression must have exactly 5 fields: minute hour day month weekday")
+            raise ValueError(
+                "cron_expression must have exactly 5 fields: minute hour day month weekday"
+            )
         for p in parts:
             if p == "*":
                 continue
@@ -96,7 +107,9 @@ class AgentCreate(BaseModel):
                 if not all(x.isdigit() or x == "*" for x in p.split(",")):
                     raise ValueError(f"invalid cron list: {p}")
             elif not p.isdigit():
-                raise ValueError(f"invalid cron field: {p} (use *, digit, */N, M-N, or M,N)")
+                raise ValueError(
+                    f"invalid cron field: {p} (use *, digit, */N, M-N, or M,N)"
+                )
         return v
 
     @field_validator("directory")
@@ -168,7 +181,9 @@ class AgentUpdate(BaseModel):
             return v
         parts = v.strip().split()
         if len(parts) != 5:
-            raise ValueError("cron_expression must have exactly 5 fields: minute hour day month weekday")
+            raise ValueError(
+                "cron_expression must have exactly 5 fields: minute hour day month weekday"
+            )
         for p in parts:
             if p == "*":
                 continue
@@ -414,6 +429,7 @@ def _remove_launchd_plist(agent_id: str):
 # Cron utilities
 # ---------------------------------------------------------------------------
 
+
 def _matches_cron_field(field_val: str, cron_val: int) -> bool:
     """Check if a cron field value matches. Supports *, digit, or list."""
     if field_val == "*":
@@ -439,6 +455,7 @@ def compute_next_cron(expression: str, since: float | None = None) -> float | No
     """
     import datetime as dt
     import calendar
+
     if since is None:
         since = time.time()
     parts = expression.strip().split()
@@ -466,7 +483,9 @@ def compute_next_cron(expression: str, since: float | None = None) -> float | No
         if not _matches_cron_field(month_f, month):
             # Advance to next valid month day
             days_in_month = calendar.monthrange(year, month)[1]
-            candidate = candidate.replace(day=min(day, days_in_month)) + dt.timedelta(days=31)
+            candidate = candidate.replace(day=min(day, days_in_month)) + dt.timedelta(
+                days=31
+            )
             candidate = candidate.replace(day=1, hour=0, minute=0)
             continue
         if not _matches_cron_field(day_f, day):
@@ -509,16 +528,18 @@ def get_launchd_info(agent_id: str, agent: dict) -> dict:
         try:
             r = subprocess.run(
                 ["launchctl", "list", f"com.legacyai.tcc.{agent_id}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if r.returncode == 0:
                 loaded = True
                 for line in r.stdout.splitlines():
-                    if line.startswith("\"PID\""):
+                    if line.startswith('"PID"'):
                         pid = int(line.split("=")[1].strip().rstrip(","))
-                    if line.startswith("\"RunCount\""):
+                    if line.startswith('"RunCount"'):
                         run_count = int(line.split("=")[1].strip().rstrip(","))
-                    if line.startswith("\"LastExitStatus\""):
+                    if line.startswith('"LastExitStatus"'):
                         last_exit = line.split("=")[1].strip().rstrip(",")
                         if last_exit == "0":
                             status_str = "running"
@@ -609,6 +630,7 @@ class ProcessHandle:
     def get_raw_scrollback(self) -> bytes:
         """Return raw scrollback for export (strip ANSI escape sequences)."""
         import re
+
         raw = bytes(self.scrollback).decode("utf-8", errors="replace")
         cleaned = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", raw)
         cleaned = re.sub(r"\x1b\][^\x07]*\x07", "", cleaned)
@@ -713,7 +735,9 @@ async def _maybe_restart(agent_id: str, handle: ProcessHandle) -> bool:
     if not agents[agent_id].get("auto_start", False):
         return False
     now = time.time()
-    history = agent_metrics.setdefault(agent_id, {}).setdefault("restart_timestamps", [])
+    history = agent_metrics.setdefault(agent_id, {}).setdefault(
+        "restart_timestamps", []
+    )
     history[:] = [t for t in history if now - t < 300]  # 5-min window
     history.append(now)
     return len(history) <= 3
@@ -725,7 +749,9 @@ async def _attempt_crash_restart(agent_id: str):
     if agent_id not in agents:
         return
     agent = agents[agent_id]
-    history = agent_metrics.setdefault(agent_id, {}).setdefault("restart_timestamps", [])
+    history = agent_metrics.setdefault(agent_id, {}).setdefault(
+        "restart_timestamps", []
+    )
     attempt = len(history)
     logger.info("Auto-restarting crashed agent %s (attempt %d/3)", agent_id, attempt)
     await asyncio.sleep(2)  # Back off
@@ -874,9 +900,9 @@ async def _cron_scheduler_loop():
                 if not expr:
                     continue
                 # When was the last fire for this agent?
-                last = _cron_last_fire.get(agent_id) or agent_metrics.get(agent_id, {}).get(
-                    "last_cron_fire", 0
-                )
+                last = _cron_last_fire.get(agent_id) or agent_metrics.get(
+                    agent_id, {}
+                ).get("last_cron_fire", 0)
                 # Compute the next fire AFTER the last known fire (or 65s ago).
                 since = max(last, now - 65)
                 next_run = compute_next_cron(expr, since=since)
@@ -884,7 +910,10 @@ async def _cron_scheduler_loop():
                     continue
                 if next_run <= now:
                     # Skip if a process is already running — cron should not pile up
-                    if agent_id in running_processes and running_processes[agent_id].alive:
+                    if (
+                        agent_id in running_processes
+                        and running_processes[agent_id].alive
+                    ):
                         continue
                     try:
                         await spawn_process(agent_id, agent)
@@ -924,10 +953,18 @@ async def lifespan(app: FastAPI):
         for k, v in state["metrics"].items():
             agent_metrics[k] = v
     # Restore running sessions (except auto_start which we handle separately)
-    running_to_restore = [aid for aid in state.get("running", []) if aid not in running_processes and aid in agents]
-    running_to_restore.sort(key=lambda aid: (agents[aid].get("order", 0), agents[aid].get("name", "")))
+    running_to_restore = [
+        aid
+        for aid in state.get("running", [])
+        if aid not in running_processes and aid in agents
+    ]
+    running_to_restore.sort(
+        key=lambda aid: (agents[aid].get("order", 0), agents[aid].get("name", ""))
+    )
     for agent_id in running_to_restore:
-        if not agents[agent_id].get("auto_start", False):  # skip auto_start (handled below)
+        if not agents[agent_id].get(
+            "auto_start", False
+        ):  # skip auto_start (handled below)
             try:
                 await spawn_process(agent_id, agents[agent_id])
                 logger.info("Restored session: %s", agent_id)
@@ -943,10 +980,16 @@ async def lifespan(app: FastAPI):
     for agent_id, agent in auto_start_agents:
         try:
             await spawn_process(agent_id, agent)
-            logger.info("Auto-start [%s] order=%s: %s",
-                        agent.get("name", agent_id), agent.get("order", 0), agent_id)
+            logger.info(
+                "Auto-start [%s] order=%s: %s",
+                agent.get("name", agent_id),
+                agent.get("order", 0),
+                agent_id,
+            )
         except Exception:
-            logger.warning("Auto-start failed for agent %s: %s", agent_id, agent.get("name", ""))
+            logger.warning(
+                "Auto-start failed for agent %s: %s", agent_id, agent.get("name", "")
+            )
         await asyncio.sleep(0.5)
     # Start cron scheduler in the background
     cron_task = asyncio.create_task(_cron_scheduler_loop())
@@ -965,11 +1008,882 @@ app = FastAPI(lifespan=lifespan)
 
 # LLM-First API layer (progressive disclosure design)
 from llm_api import llm_router
+
 app.include_router(llm_router, prefix="/api/llm", tags=["LLM"])
 
 STATIC_DIR = "static"
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Kernel module: Workspace Editor (MWIDE source copy)
+# The built frontend is served as static files under /workspace-editor/.
+# The backend runs as a child process on WORKSPACE_EDITOR_PORT (default 10602).
+from pathlib import Path as _PathLibEarly
+
+# Dev-Launcher static mount (copied from /Volumes/Storage/Development/dev-launcher/frontend/dist/)
+_DEV_LAUNCHER_DIST = _PathLibEarly("static/dev-launcher")
+if _DEV_LAUNCHER_DIST.is_dir():
+    app.mount(
+        "/dev-launcher",
+        StaticFiles(directory=str(_DEV_LAUNCHER_DIST), html=True),
+        name="dev-launcher",
+    )
+
+_WORKSPACE_EDITOR_DIST = (
+    _PathLibEarly(__file__).parent / "modules" / "workspace-editor" / "source" / "dist"
+)
+_WORKSPACE_EDITOR_PORT = int(os.environ.get("WORKSPACE_EDITOR_PORT", "10602"))
+if _WORKSPACE_EDITOR_DIST.is_dir():
+    app.mount(
+        "/workspace-editor",
+        StaticFiles(directory=str(_WORKSPACE_EDITOR_DIST), html=True),
+        name="workspace-editor",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Workspace Editor Backend APIs
+# ---------------------------------------------------------------------------
+# Port of MWIDE's Express server.ts filesystem bridge, git proxy, LLM proxy,
+# and vault into FastAPI routes. The frontend expects these endpoints.
+
+import json as _json
+import shutil as _shutil
+import time as _time
+from pathlib import Path as _PathLibWE
+
+# --- FS bridge: path allow/deny lists (mirrors MWIDE governance) ---
+_WE_DENY_ROOTS = ["/Volumes/T7", "/private/var/db", "/System"]
+_WE_ALLOWED_ROOTS = [
+    str(_PathLibWE.home()),
+    os.getcwd(),
+    "/Volumes/SanDisk1Tb",
+    "/Volumes/Storage",
+    str(_PathLibWE.home() / "Library/CloudStorage"),
+    "/tmp",
+    "/private/tmp",
+    "/private/var/folders",
+    "/opt",
+    "/usr/local",
+]
+_WE_LIST_CAP = 5000
+
+
+def _we_assert_allowed(p: str) -> None:
+    """Mirror MWIDE's assertAllowed: deny-list first, then allow-list."""
+    resolved = str(_PathLibWE(p).resolve())
+    for r in _WE_DENY_ROOTS:
+        if resolved == r or resolved.startswith(r + "/"):
+            raise HTTPException(status_code=403, detail=f"Path denied: {resolved}")
+    for r in _WE_ALLOWED_ROOTS:
+        if resolved == r or resolved.startswith(r + "/"):
+            return
+    raise HTTPException(status_code=403, detail=f"Path not allowed: {resolved}")
+
+
+# --- FS bridge: /api/fs/* ---
+@app.get("/api/fs/home")
+async def we_fs_home() -> dict:
+    return {"home": str(_PathLibWE.home())}
+
+
+@app.get("/api/fs/list")
+async def we_fs_list(path: str = "", showHidden: str = "true") -> dict:
+    dir_path = path or str(_PathLibWE.home())
+    # Special /Volumes case
+    if dir_path == "/Volumes":
+        items = []
+        try:
+            for entry in sorted(os.listdir("/Volumes")):
+                full = str(_PathLibWE("/Volumes") / entry)
+                denied = any(
+                    full == r or full.startswith(r + "/") for r in _WE_DENY_ROOTS
+                )
+                if not denied and os.path.isdir(full):
+                    items.append(
+                        {
+                            "name": entry,
+                            "path": full,
+                            "type": "dir",
+                            "size": 0,
+                            "mtimeMs": 0,
+                        }
+                    )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "path": dir_path,
+            "items": items,
+            "truncated": False,
+            "total": len(items),
+        }
+
+    _we_assert_allowed(dir_path)
+    try:
+        entries = sorted(
+            os.listdir(dir_path),
+            key=lambda n: (not os.path.isdir(os.path.join(dir_path, n)), n.lower()),
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Directory not found: {dir_path}")
+    except PermissionError:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {dir_path}")
+
+    show = showHidden != "false"
+    if not show:
+        entries = [e for e in entries if not e.startswith(".")]
+    total = len(entries)
+    capped = entries[:_WE_LIST_CAP]
+    items = []
+    for name in capped:
+        full = os.path.join(dir_path, name)
+        try:
+            st = os.stat(full)
+            items.append(
+                {
+                    "name": name,
+                    "path": full,
+                    "type": "dir" if os.path.isdir(full) else "file",
+                    "size": st.st_size,
+                    "mtimeMs": st.st_mtime * 1000,
+                }
+            )
+        except (OSError, PermissionError):
+            items.append(
+                {"name": name, "path": full, "type": "file", "size": 0, "mtimeMs": 0}
+            )
+    return {
+        "path": dir_path,
+        "items": items,
+        "total": total,
+        "truncated": total > _WE_LIST_CAP,
+    }
+
+
+@app.get("/api/fs/read")
+async def we_fs_read(path: str = "") -> dict:
+    if not path:
+        raise HTTPException(status_code=400, detail="path required")
+    _we_assert_allowed(path)
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        return {"path": path, "content": content}
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"File not found: {path}")
+    except PermissionError:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {path}")
+    except IsADirectoryError:
+        raise HTTPException(status_code=400, detail=f"Path is a directory: {path}")
+
+
+@app.get("/api/fs/serve")
+async def we_fs_serve(path: str = ""):
+    """Serve a raw file for browser viewing (replaces file:// links)."""
+    if not path:
+        raise HTTPException(status_code=400, detail="path required")
+    _we_assert_allowed(path)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail=f"Not found: {path}")
+    import mimetypes as _mt
+
+    mime, _ = _mt.guess_type(path)
+    if not mime:
+        mime = "text/plain"
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        return Response(content=data, media_type=mime)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {path}")
+
+
+@app.get("/api/fs/browse")
+async def we_fs_browse(path: str = ""):
+    """Browse to a directory — redirects to fs/list or fs/serve depending on type."""
+    if not path:
+        return {"type": "directory", "path": "/"}
+    _we_assert_allowed(path)
+    if os.path.isdir(path):
+        return {"type": "directory", "path": path}
+    elif os.path.isfile(path):
+        return {"type": "file", "path": path, "serve_url": f"/api/fs/serve?path={path}"}
+    else:
+        raise HTTPException(status_code=404, detail=f"Not found: {path}")
+
+
+class _WeWriteBody(BaseModel):
+    path: str
+    content: str
+
+
+@app.post("/api/fs/write")
+async def we_fs_write(body: _WeWriteBody) -> dict:
+    _we_assert_allowed(body.path)
+    os.makedirs(os.path.dirname(body.path) or ".", exist_ok=True)
+    with open(body.path, "w", encoding="utf-8") as f:
+        f.write(body.content)
+    return {"ok": True, "path": body.path, "bytes": len(body.content.encode("utf-8"))}
+
+
+class _WeMkdirBody(BaseModel):
+    path: str
+
+
+@app.post("/api/fs/mkdir")
+async def we_fs_mkdir(body: _WeMkdirBody) -> dict:
+    _we_assert_allowed(body.path)
+    os.makedirs(body.path, exist_ok=True)
+    return {"ok": True, "path": body.path}
+
+
+class _WeRenameBody(BaseModel):
+    from_: str = Field(alias="from")
+    to: str
+
+    model_config = {"populate_by_name": True}
+
+
+@app.post("/api/fs/rename")
+async def we_fs_rename(body: _WeRenameBody) -> dict:
+    _we_assert_allowed(body.from_)
+    _we_assert_allowed(body.to)
+    os.makedirs(os.path.dirname(body.to) or ".", exist_ok=True)
+    os.rename(body.from_, body.to)
+    return {"ok": True}
+
+
+@app.delete("/api/fs/remove")
+async def we_fs_remove(path: str = "") -> dict:
+    if not path:
+        raise HTTPException(status_code=400, detail="path required")
+    _we_assert_allowed(path)
+    if os.path.isdir(path):
+        _shutil.rmtree(path)
+    else:
+        os.unlink(path)
+    return {"ok": True}
+
+
+@app.get("/api/fs/stat")
+async def we_fs_stat(path: str = "") -> dict:
+    if not path:
+        raise HTTPException(status_code=400, detail="path required")
+    _we_assert_allowed(path)
+    st = os.stat(path)
+    return {
+        "path": path,
+        "type": "dir" if os.path.isdir(path) else "file",
+        "size": st.st_size,
+        "mtimeMs": st.st_mtime * 1000,
+        "mode": st.st_mode,
+    }
+
+
+# --- Vault: API key storage (mirrors MWIDE ~/.config/mwide-vault.json) ---
+_WE_VAULT_DIR = _PathLibWE.home() / ".config"
+_WE_VAULT_PATH = _WE_VAULT_DIR / "mwide-vault.json"
+
+
+def _we_vault_read() -> dict:
+    try:
+        txt = _WE_VAULT_PATH.read_text(encoding="utf-8")
+        data = _json.loads(txt)
+        return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, _json.JSONDecodeError):
+        return {}
+
+
+def _we_vault_write(data: dict) -> None:
+    _WE_VAULT_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = _WE_VAULT_PATH.with_suffix(".tmp")
+    tmp.write_text(_json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(_WE_VAULT_PATH)
+    try:
+        _WE_VAULT_PATH.chmod(0o600)
+    except OSError:
+        pass
+
+
+def _we_valid_vault_id(id_str: str) -> bool:
+    import re
+
+    return bool(re.match(r"^[A-Za-z0-9._-]{1,64}$", id_str))
+
+
+@app.get("/api/vault/list")
+async def we_vault_list() -> dict:
+    data = _we_vault_read()
+    return {"ids": [k for k, v in data.items() if v]}
+
+
+class _WeVaultSetBody(BaseModel):
+    id: str
+    key: str
+
+
+@app.post("/api/vault/set")
+async def we_vault_set(body: _WeVaultSetBody) -> dict:
+    if not _we_valid_vault_id(body.id) or not isinstance(body.key, str):
+        raise HTTPException(status_code=400, detail="invalid id or key")
+    data = _we_vault_read()
+    if body.key:
+        data[body.id] = body.key
+    else:
+        data.pop(body.id, None)
+    _we_vault_write(data)
+    return {"ok": True, "id": body.id}
+
+
+@app.delete("/api/vault/delete")
+async def we_vault_delete(id: str = "") -> dict:
+    if not _we_valid_vault_id(id):
+        raise HTTPException(status_code=400, detail="invalid id")
+    data = _we_vault_read()
+    data.pop(id, None)
+    _we_vault_write(data)
+    return {"ok": True, "id": id}
+
+
+# --- Git CORS proxy ---
+@app.api_route("/api/git-proxy/{rest:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def we_git_proxy(rest: str, request: Request) -> Response:
+    """Forward isomorphic-git requests to HTTPS git remotes."""
+    target = rest
+    # Block non-http(s) BEFORE prepending https://
+    if "://" in target and not target.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="bad protocol")
+    if not target.startswith(("http://", "https://")):
+        target = "https://" + target
+
+    import httpx
+
+    headers = dict(request.headers)
+    for skip in ("host", "connection", "content-length"):
+        headers.pop(skip, None)
+        headers.pop(skip.title(), None)
+
+    body = await request.body()
+    method = request.method
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        try:
+            resp = await client.request(
+                method, target, headers=headers, content=body or None
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=502, detail=f"git proxy error: {e}")
+
+    resp_headers = dict(resp.headers)
+    resp_headers.pop("content-encoding", None)
+    resp_headers["access-control-allow-origin"] = "*"
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        headers=resp_headers,
+    )
+
+
+# --- LLM streaming proxy ---
+@app.post("/api/llm/stream")
+async def we_llm_stream(request: Request) -> StreamingResponse:
+    """Proxy LLM chat completions with SSE streaming."""
+    body = await request.json()
+    provider = body.get("provider", {})
+    messages = body.get("messages", [])
+    tools = body.get("tools", [])
+
+    if not provider or not messages:
+        raise HTTPException(status_code=400, detail="Missing provider or messages")
+
+    # Resolve API key from vault
+    api_key = provider.get("apiKey", "")
+    vault = _we_vault_read()
+    provider_id = provider.get("id", "")
+    if provider_id and vault.get(provider_id):
+        api_key = vault[provider_id]
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key not configured")
+
+    base_url = provider.get("baseUrl", "").rstrip("/")
+    model = provider.get("model", "")
+    max_tokens = provider.get("maxTokens", 4096)
+    provider_type = provider.get("type", "openai")
+    provider_id_val = provider.get("id", "")
+    debug = body.get("debug", False)
+
+    import httpx
+
+    async def stream_openai():
+        url = f"{base_url}/chat/completions"
+        req_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        if provider_id_val == "openrouter":
+            req_headers["HTTP-Referer"] = "https://mobile-web-ide.local"
+            req_headers["X-Title"] = "Mobile Web IDE"
+        req_body = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            "max_tokens": max_tokens,
+        }
+        if tools:
+            req_body["tools"] = tools
+            req_body["tool_choice"] = "auto"
+
+        async with httpx.AsyncClient(timeout=120) as client:
+            async with client.stream(
+                "POST", url, json=req_body, headers=req_headers
+            ) as resp:
+                if resp.status_code != 200:
+                    err_text = await resp.aread()
+                    yield f"data: {_json.dumps({'type': 'error', 'error': f'HTTP {resp.status_code}: {err_text.decode()[:500]}'})}\n\n"
+                    return
+                async for line in resp.aiter_lines():
+                    if line.startswith("data: "):
+                        yield line + "\n"
+                        yield "\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        stream_openai(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.post("/api/llm/test")
+async def we_llm_test(request: Request) -> dict:
+    """Test LLM provider connectivity."""
+    body = await request.json()
+    provider = body.get("provider", {})
+    if not provider:
+        return {"ok": False, "error": "Missing provider config"}
+
+    api_key = provider.get("apiKey", "")
+    vault = _we_vault_read()
+    pid = provider.get("id", "")
+    if pid and vault.get(pid):
+        api_key = vault[pid]
+    if not api_key:
+        return {"ok": False, "error": "API key not configured"}
+
+    base_url = provider.get("baseUrl", "").rstrip("/")
+    model = provider.get("model", "")
+    if not base_url or not model:
+        return {"ok": False, "error": "Base URL or model not configured"}
+
+    import httpx
+
+    t0 = _time.time()
+    url = f"{base_url}/chat/completions"
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                url,
+                headers=headers,
+                json={
+                    "model": model,
+                    "max_tokens": 10,
+                    "messages": [{"role": "user", "content": "Say OK"}],
+                },
+            )
+        ms = int((_time.time() - t0) * 1000)
+        if resp.status_code != 200:
+            return {
+                "ok": False,
+                "error": f"HTTP {resp.status_code}: {resp.text[:500]}",
+                "responseTime": ms,
+            }
+        return {
+            "ok": True,
+            "model": model,
+            "responseTime": ms,
+            "snippet": resp.text[:200],
+        }
+    except Exception as e:
+        ms = int((_time.time() - t0) * 1000)
+        return {"ok": False, "error": f"Connection failed: {e}", "responseTime": ms}
+
+
+# Kernel module: Agent Execution (ATerm source copy)
+# The built frontend is served as static files under /agent-execution/.
+_AGENT_EXECUTION_DIST = (
+    _PathLibEarly(__file__).parent
+    / "modules"
+    / "agent-execution"
+    / "source"
+    / "dist"
+    / "ui"
+)
+if _AGENT_EXECUTION_DIST.is_dir():
+    app.mount(
+        "/agent-execution",
+        StaticFiles(directory=str(_AGENT_EXECUTION_DIST), html=True),
+        name="agent-execution",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Agent Execution Backend API
+# ---------------------------------------------------------------------------
+# Stub implementation of ATerm's /api/do endpoint. The real ATerm has a full
+# session manager with PTY pool, distillation, automation, etc. This stub
+# provides the core actions the frontend needs for beta: list, create, run,
+# read, stop, start, delete, cancel, answer.
+# Sessions are backed by Kernel PTY processes ("terminals" in server.py).
+
+_ATERM_SESSIONS: dict = {}  # name -> {id, name, status, output_buffer}
+
+_VALID_DO_ACTIONS = {
+    "list",
+    "read",
+    "run",
+    "stop",
+    "start",
+    "cancel",
+    "answer",
+    "create",
+    "delete",
+    "note",
+    "search",
+    "broadcast",
+    "history",
+    "checkpoint",
+    "record",
+    "verify",
+    "batch",
+    "bridge",
+    "automate",
+}
+
+
+class _DoRequest(BaseModel):
+    action: str
+    session: str | None = None
+    input: str | None = None
+    wait_until: str | None = None
+    timeout: int | None = None
+    lines: int | None = None
+    output_mode: str | None = None
+    include_marks: bool | None = None
+    include_advanced: bool | None = None
+    command: str | None = None
+    directory: str | None = None
+    tags: list[str] | None = None
+    auto_start: bool | None = None
+    sessions: list[str] | None = None
+    cron_expression: str | None = None
+
+
+def _aterm_hint(status: str | None) -> str:
+    hints = {
+        "ready": "Session is ready for commands.",
+        "busy": "Session is running a command. Wait or cancel.",
+        "stopped": "Session is stopped. Start it first.",
+        "exited": "Session process has exited. Restart it.",
+        "starting": "Session is starting up.",
+    }
+    return hints.get(status or "", "Unknown state.")
+
+
+def _aterm_actions(status: str | None) -> list[str]:
+    mapping = {
+        "ready": ["run", "read", "stop", "cancel", "note", "history"],
+        "busy": ["read", "cancel", "stop", "note"],
+        "stopped": ["start", "delete", "note", "history"],
+        "exited": ["start", "delete", "read", "note", "history"],
+        "starting": ["read", "stop", "note"],
+    }
+    return mapping.get(status or "", ["list", "create"])
+
+
+@app.post("/api/do")
+async def aterm_do(request: Request) -> dict:
+    """ATerm-compatible /api/do endpoint — progressive disclosure agent API."""
+    try:
+        body = await request.json()
+    except Exception:
+        return {"ok": False, "error": "invalid JSON body"}
+
+    action = body.get("action", "")
+    if not action or action not in _VALID_DO_ACTIONS:
+        return {
+            "ok": False,
+            "error": f"invalid action: {action}. Valid: {', '.join(sorted(_VALID_DO_ACTIONS))}",
+        }
+
+    try:
+        if action == "list":
+            sessions = []
+            for name, s in _ATERM_SESSIONS.items():
+                sessions.append(
+                    {
+                        "id": s.get("id", name),
+                        "name": name,
+                        "status": s.get("status", "stopped"),
+                        "tags": s.get("tags", []),
+                    }
+                )
+            return {
+                "ok": True,
+                "sessions": sessions,
+                "hint": f"{len(sessions)} session(s).",
+                "actions": ["create", "read", "run", "start", "stop"],
+            }
+
+        session_name = body.get("session", "")
+
+        if action == "create":
+            if not session_name:
+                return {"ok": False, "error": "session (name) required"}
+            cmd = body.get("command", "/bin/bash")
+            session_id = str(uuid.uuid4())[:8]
+            _ATERM_SESSIONS[session_name] = {
+                "id": session_id,
+                "name": session_name,
+                "status": "stopped",
+                "command": cmd,
+                "directory": body.get("directory", os.getcwd()),
+                "tags": body.get("tags", []),
+                "output_buffer": "",
+            }
+            # Broadcast session creation to /ws/events clients
+            await _broadcast_aterm_event(
+                {
+                    "type": "session_created",
+                    "session": {
+                        "id": session_id,
+                        "name": session_name,
+                        "status": "stopped",
+                        "tags": body.get("tags", []),
+                    },
+                }
+            )
+            return {
+                "ok": True,
+                "id": session_id,
+                "status": "stopped",
+                "hint": "Session created. Start it when ready.",
+                "actions": ["start", "delete", "note"],
+            }
+
+        if action == "delete":
+            if not session_name:
+                return {"ok": False, "error": "session required"}
+            deleted = _ATERM_SESSIONS.pop(session_name, None)
+            if deleted:
+                # Kill real PTY if running
+                pty_id = deleted.get("_pty_id")
+                if pty_id:
+                    await kill_process(pty_id)
+                await _broadcast_aterm_event(
+                    {
+                        "type": "session_deleted",
+                        "sessionId": deleted.get("id", session_name),
+                    }
+                )
+            return {
+                "ok": deleted is not None,
+                "hint": "Session deleted." if deleted else "Session not found.",
+                "actions": ["list", "create"],
+            }
+
+        # Actions that don't require a session
+        if action == "bridge":
+            return {
+                "ok": True,
+                "bridge_status": {"server": False},
+                "hint": "Anvil server not running.",
+                "actions_simplified": [
+                    "navigate",
+                    "read",
+                    "click",
+                    "type",
+                    "screenshot",
+                ],
+            }
+
+        if action == "search":
+            return {"ok": True, "results": [], "hint": "No matches found."}
+
+        if action == "broadcast":
+            return {
+                "ok": True,
+                "sent": 0,
+                "total": 0,
+                "hint": "No sessions to broadcast to.",
+            }
+
+        # Actions below require an existing session
+        sess = _ATERM_SESSIONS.get(session_name)
+        if not sess:
+            return {"ok": False, "error": f"session not found: {session_name}"}
+
+        if action in ("start",):
+            sess["status"] = "starting"
+            # Spawn a real PTY process via Kernel infrastructure
+            pty_id = f"aterm-{sess['id']}"
+            pty_agent = {
+                "command": sess.get("command", "/bin/bash"),
+                "directory": sess.get("directory", os.getcwd()),
+                "name": session_name,
+            }
+            try:
+                pty_handle = await spawn_process(pty_id, pty_agent)
+                sess["_pty_id"] = pty_id
+                sess["status"] = "ready"
+                sess["pid"] = pty_handle.process.pid
+                sess["output_buffer"] = ""
+                # Broadcast state change
+                await _broadcast_aterm_event(
+                    {
+                        "type": "session_started",
+                        "session": {
+                            "id": sess["id"],
+                            "name": session_name,
+                            "status": "ready",
+                            "pid": pty_handle.process.pid,
+                        },
+                    }
+                )
+            except Exception as e:
+                sess["status"] = "error"
+                return {
+                    "ok": False,
+                    "status": "error",
+                    "hint": f"Failed to start: {e}",
+                    "actions": ["delete"],
+                }
+            return {
+                "ok": True,
+                "status": "ready",
+                "hint": "Session started.",
+                "actions": _aterm_actions("ready"),
+            }
+
+        if action == "stop":
+            pty_id = sess.get("_pty_id")
+            if pty_id:
+                await kill_process(pty_id)
+            sess["status"] = "stopped"
+            sess["pid"] = None
+            await _broadcast_aterm_event(
+                {
+                    "type": "session_stopped",
+                    "session": {
+                        "id": sess["id"],
+                        "name": session_name,
+                        "status": "stopped",
+                        "pid": None,
+                    },
+                }
+            )
+            return {
+                "ok": True,
+                "status": "stopped",
+                "hint": "Session stopped.",
+                "actions": ["start", "delete"],
+            }
+
+        if action == "cancel":
+            pty_id = sess.get("_pty_id")
+            if pty_id and pty_id in running_processes:
+                h = running_processes[pty_id]
+                if h.alive:
+                    try:
+                        os.write(h.master_fd, b"\x03")  # Ctrl+C
+                    except OSError:
+                        pass
+            sess["status"] = "ready"
+            return {"ok": True, "hint": "Sent Ctrl+C.", "actions": ["read", "run"]}
+
+        if action in ("read",):
+            # If a real PTY is running, pull latest output from scrollback
+            pty_id = sess.get("_pty_id")
+            if pty_id and pty_id in running_processes:
+                h = running_processes[pty_id]
+                new_output = bytes(h.scrollback).decode("utf-8", errors="replace")
+                sess["output_buffer"] = (
+                    new_output[-4000:] if len(new_output) > 4000 else new_output
+                )
+                if not h.alive:
+                    sess["status"] = "exited"
+            return {
+                "ok": True,
+                "output": sess.get("output_buffer", ""),
+                "status": sess.get("status", "stopped"),
+                "hint": _aterm_hint(sess.get("status")),
+                "actions": _aterm_actions(sess.get("status")),
+            }
+
+        if action in ("run", "answer"):
+            user_input = body.get("input", "")
+            if not user_input:
+                return {"ok": False, "error": "input required"}
+            pty_id = sess.get("_pty_id")
+            if pty_id and pty_id in running_processes:
+                h = running_processes[pty_id]
+                if h.alive:
+                    try:
+                        os.write(h.master_fd, (user_input + "\n").encode("utf-8"))
+                    except OSError:
+                        pass
+                    # Give PTY a moment to produce output
+                    await asyncio.sleep(0.3)
+                    # Read any new output from scrollback
+                    new_output = bytes(h.scrollback).decode("utf-8", errors="replace")
+                    sess["output_buffer"] = (
+                        new_output[-4000:] if len(new_output) > 4000 else new_output
+                    )
+                else:
+                    sess["output_buffer"] += f"$ {user_input}\n[process exited]\n"
+            else:
+                sess["output_buffer"] += (
+                    f"$ {user_input}\n[no PTY — session not started]\n"
+                )
+            sess["status"] = "ready"
+            return {
+                "ok": True,
+                "output": sess["output_buffer"],
+                "status": "ready",
+                "hint": _aterm_hint("ready"),
+                "actions": _aterm_actions("ready"),
+            }
+
+        if action == "note":
+            note_input = body.get("input")
+            if note_input is not None:
+                sess["scratchpad"] = note_input
+                return {"ok": True, "hint": "Scratchpad updated."}
+            return {
+                "ok": True,
+                "scratchpad": sess.get("scratchpad", ""),
+                "hint": "Current scratchpad contents.",
+            }
+
+        if action == "history":
+            return {"ok": True, "history": [], "hint": "0 commands in history."}
+
+        if action == "search":
+            return {"ok": True, "results": [], "hint": "No matches found."}
+
+        if action == "broadcast":
+            return {
+                "ok": True,
+                "sent": 0,
+                "total": 0,
+                "hint": "No sessions to broadcast to.",
+            }
+
+        # Remaining actions return stub responses
+        return {"ok": True, "hint": f"Action '{action}' acknowledged (stub)."}
+
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 # ---------------------------------------------------------------------------
@@ -1037,8 +1951,16 @@ async def update_agent(agent_id: str, updates: AgentUpdate):
     save_agents(agents)
     # If launchd config changed, regenerate or remove the plist accordingly.
     new_launchd_type = agent.get("launchd_type", "none")
-    automation_fields = {"launchd_type", "launchd_interval", "launchd_watchpath", "command", "directory"}
-    touched_automation = bool(automation_fields & set(updates.model_dump(exclude_none=True).keys()))
+    automation_fields = {
+        "launchd_type",
+        "launchd_interval",
+        "launchd_watchpath",
+        "command",
+        "directory",
+    }
+    touched_automation = bool(
+        automation_fields & set(updates.model_dump(exclude_none=True).keys())
+    )
     if touched_automation:
         if new_launchd_type == "none" and prev_launchd_type != "none":
             _remove_launchd_plist(agent_id)
@@ -1317,7 +2239,9 @@ async def rename_tag(body: dict):
     old_name = body.get("old_name", "").strip()
     new_name = body.get("new_name", "").strip()
     if not old_name or not new_name:
-        raise HTTPException(status_code=400, detail="old_name and new_name are required")
+        raise HTTPException(
+            status_code=400, detail="old_name and new_name are required"
+        )
     if old_name == new_name:
         return {"renamed": 0}
     agents = load_agents()
@@ -1407,7 +2331,323 @@ async def get_scrollback_stats(agent_id: str):
 
 
 # ---------------------------------------------------------------------------
-# WebSocket terminal
+# ---------------------------------------------------------------------------
+# WebSocket: /ws/pty — MWIDE TerminalPane JSON-PTY protocol
+# ---------------------------------------------------------------------------
+# MWIDE's TerminalPane.tsx sends JSON messages:
+#   {type:"open", sessionId?, cwd, cols, rows, command?}
+#   {type:"in", data}
+#   {type:"resize", cols, rows}
+#   {type:"kill"}
+# Server responds:
+#   {type:"ready", sessionId, pid, shell, resumed}
+#   {type:"replay", data}
+#   {type:"out", data}
+#   {type:"exit", code}
+
+import secrets as _secrets
+
+_mwide_pty_sessions: Dict[str, dict] = {}  # sessionId -> {handle, cwd, command}
+
+
+@app.websocket("/ws/pty")
+async def mwide_pty_endpoint(websocket: WebSocket):
+    """MWIDE TerminalPane JSON-PTY WebSocket."""
+    await websocket.accept()
+    handle: ProcessHandle | None = None
+    session_id = ""
+    reader_task: asyncio.Task | None = None
+    alive = True
+
+    async def read_pty_output(h: ProcessHandle, sid: str):
+        """Background task: read PTY output using event-loop add_reader (non-blocking)."""
+        nonlocal alive
+        loop = asyncio.get_running_loop()
+        fd = h.master_fd
+        queue: asyncio.Queue[bytes | None] = asyncio.Queue()
+
+        flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+        h._reader_closed = False
+
+        def _on_readable():
+            if h._reader_closed:
+                return
+            try:
+                data = os.read(fd, 65536)
+                if not data:
+                    h._reader_closed = True
+                    queue.put_nowait(None)
+                    return
+                queue.put_nowait(data)
+            except BlockingIOError:
+                pass
+            except OSError:
+                if not h._reader_closed:
+                    h._reader_closed = True
+                    queue.put_nowait(None)
+
+        loop.add_reader(fd, _on_readable)
+        try:
+            while alive:
+                data = await queue.get()
+                if data is None:
+                    break
+                text = data.decode("utf-8", errors="replace")
+                try:
+                    await websocket.send_json({"type": "out", "data": text})
+                except Exception:
+                    break
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass
+        finally:
+            try:
+                loop.remove_reader(fd)
+            except Exception:
+                pass
+            if alive:
+                try:
+                    code = h.process.returncode
+                    if code is None:
+                        await h.process.wait()
+                        code = h.process.returncode
+                    await websocket.send_json(
+                        {"type": "exit", "code": code if code is not None else -1}
+                    )
+                except Exception:
+                    pass
+
+    try:
+        # First message must be {type: "open", ...}
+        raw = await websocket.receive()
+        if raw.get("type") == "websocket.disconnect":
+            return
+        text = raw.get("text", "")
+        try:
+            msg = json.loads(text)
+        except (json.JSONDecodeError, TypeError):
+            await websocket.send_json({"type": "exit", "code": -1})
+            return
+
+        if msg.get("type") != "open":
+            await websocket.send_json({"type": "exit", "code": -1})
+            return
+
+        existing_sid = msg.get("sessionId")
+        cwd = msg.get("cwd") or os.path.expanduser("~")
+        cols = int(msg.get("cols", 80))
+        rows = int(msg.get("rows", 24))
+        command = msg.get("command", "/bin/bash")
+
+        resumed = False
+
+        # Try to resume existing session
+        if existing_sid and existing_sid in _mwide_pty_sessions:
+            stored = _mwide_pty_sessions[existing_sid]
+            existing_handle = stored.get("handle")
+            if existing_handle and existing_handle.alive:
+                handle = existing_handle
+                assert handle is not None  # guaranteed by existing_handle check
+                session_id = existing_sid
+                resumed = True
+                # Resize
+                try:
+                    winsize = struct.pack("HHHH", rows, cols, 0, 0)
+                    fcntl.ioctl(handle.master_fd, termios.TIOCSWINSZ, winsize)
+                except OSError:
+                    pass
+
+        if not handle or not handle.alive:
+            # Spawn new PTY
+            session_id = existing_sid or f"mwide-pty-{_secrets.token_hex(4)}"
+            agent = {
+                "command": command,
+                "directory": cwd,
+                "name": session_id,
+            }
+            try:
+                handle = await spawn_process(session_id, agent)
+                _mwide_pty_sessions[session_id] = {
+                    "handle": handle,
+                    "cwd": cwd,
+                    "command": command,
+                }
+            except Exception:
+                await websocket.send_json({"type": "exit", "code": -1})
+                return
+            # Resize to requested dimensions
+            try:
+                winsize = struct.pack("HHHH", rows, cols, 0, 0)
+                fcntl.ioctl(handle.master_fd, termios.TIOCSWINSZ, winsize)
+            except OSError:
+                pass
+
+        # Send ready
+        await websocket.send_json(
+            {
+                "type": "ready",
+                "sessionId": session_id,
+                "pid": handle.process.pid if handle.process else None,
+                "shell": command,
+                "resumed": resumed,
+            }
+        )
+
+        # Start reader task
+        reader_task = asyncio.create_task(read_pty_output(handle, session_id))
+
+        # Main message loop
+        while alive:
+            raw = await websocket.receive()
+            if raw.get("type") == "websocket.disconnect":
+                break
+            text = raw.get("text", "")
+            try:
+                msg = json.loads(text)
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+            mtype = msg.get("type")
+            if mtype == "in" and handle and handle.alive:
+                data = msg.get("data", "")
+                try:
+                    os.write(handle.master_fd, data.encode("utf-8"))
+                except OSError:
+                    break
+            elif mtype == "resize" and handle and handle.alive:
+                try:
+                    c = int(msg.get("cols", 80))
+                    r = int(msg.get("rows", 24))
+                    winsize = struct.pack("HHHH", r, c, 0, 0)
+                    fcntl.ioctl(handle.master_fd, termios.TIOCSWINSZ, winsize)
+                except (OSError, ValueError):
+                    pass
+            elif mtype == "kill" and handle:
+                try:
+                    handle.process.terminate()
+                except Exception:
+                    pass
+                break
+
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        alive = False
+        if reader_task and not reader_task.done():
+            reader_task.cancel()
+
+
+# ---------------------------------------------------------------------------
+# WebSocket: /ws/collab — MWIDE collaboration fan-out hub
+# ---------------------------------------------------------------------------
+# Simple room-based fan-out: messages from one peer are forwarded to all
+# other peers in the same room. No CRDT — last-write-wins at application level.
+
+_collab_rooms: Dict[str, list] = {}  # room -> [WebSocket, ...]
+
+
+@app.websocket("/ws/collab")
+async def collab_endpoint(websocket: WebSocket):
+    """Collaboration WebSocket — room-based fan-out."""
+    await websocket.accept()
+    room = websocket.query_params.get("room", "default")
+
+    if room not in _collab_rooms:
+        _collab_rooms[room] = []
+    _collab_rooms[room].append(websocket)
+
+    try:
+        while True:
+            raw = await websocket.receive()
+            if raw.get("type") == "websocket.disconnect":
+                break
+            text = raw.get("text")
+            if not text:
+                continue
+            # Fan out to all other peers in the room
+            peers = _collab_rooms.get(room, [])
+            for peer in peers:
+                if peer is websocket:
+                    continue
+                try:
+                    await peer.send_text(text)
+                except Exception:
+                    pass
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        peers = _collab_rooms.get(room, [])
+        if websocket in peers:
+            peers.remove(websocket)
+        if not peers:
+            _collab_rooms.pop(room, None)
+
+
+# ---------------------------------------------------------------------------
+# WebSocket: /ws/events — ATerm session lifecycle events
+# ---------------------------------------------------------------------------
+# ATerm's useEvents hook connects here. When sessions are created/deleted/
+# started/stopped via /api/do, we broadcast state changes to all connected
+# event clients.
+
+_aterm_event_clients: list = []
+
+
+async def _broadcast_aterm_event(event: dict):
+    """Send an event dict to all connected /ws/events clients."""
+    dead = []
+    for client in _aterm_event_clients:
+        try:
+            await client.send_json(event)
+        except Exception:
+            dead.append(client)
+    for d in dead:
+        if d in _aterm_event_clients:
+            _aterm_event_clients.remove(d)
+
+
+@app.websocket("/ws/events")
+async def aterm_events_endpoint(websocket: WebSocket):
+    """ATerm session lifecycle events WebSocket."""
+    await websocket.accept()
+    _aterm_event_clients.append(websocket)
+    # Send initial session list
+    sessions = []
+    for name, s in _ATERM_SESSIONS.items():
+        sessions.append(
+            {
+                "id": s.get("id", name),
+                "name": name,
+                "status": s.get("status", "stopped"),
+                "tags": s.get("tags", []),
+                "pid": s.get("pid"),
+            }
+        )
+    try:
+        await websocket.send_json({"type": "sessions_list", "sessions": sessions})
+        # Keep alive — client just listens
+        while True:
+            msg = await websocket.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        if websocket in _aterm_event_clients:
+            _aterm_event_clients.remove(websocket)
+
+
+# ---------------------------------------------------------------------------
+# WebSocket terminal (catch-all /ws/{agent_id} — MUST be after specific)
 # ---------------------------------------------------------------------------
 
 
@@ -1415,13 +2655,87 @@ async def get_scrollback_stats(agent_id: str):
 async def websocket_endpoint(websocket: WebSocket, agent_id: str):
     await websocket.accept()
     agents = load_agents()
+
+    # Check if this is a regular sidebar agent or an ATerm-managed PTY
+    # ATerm sessions store their PTY under "aterm-{session_id}" in running_processes
+    pty_id = None
     if agent_id not in agents:
+        # Maybe it's an ATerm session ID — look up the PTY ID
+        for _name, sess in _ATERM_SESSIONS.items():
+            if sess.get("id") == agent_id:
+                pty_id = sess.get("_pty_id")
+                break
+        if not pty_id:
+            # Also check if agent_id is directly a PTY ID (aterm-xxxx)
+            if agent_id in running_processes:
+                pty_id = agent_id
+        if not pty_id:
+            await websocket.send_json(
+                {"type": "status", "status": "error", "message": "Agent not found"}
+            )
+            await websocket.close()
+            return
+
+    if pty_id:
+        # ATerm/PTY WebSocket — use the PTY handle directly
+        handle = running_processes.get(pty_id)
+        if not handle or not handle.alive:
+            await websocket.send_json(
+                {"type": "status", "status": "error", "message": "PTY not running"}
+            )
+            await websocket.close()
+            return
+        handle.websockets.append(websocket)
         await websocket.send_json(
-            {"type": "status", "status": "error", "message": "Agent not found"}
+            {"type": "status", "status": "connected", "reconnect": True}
         )
-        await websocket.close()
+        clean = handle.get_clean_scrollback()
+        if clean:
+            try:
+                await websocket.send_bytes(clean)
+            except Exception:
+                pass
+        # Main loop — raw byte streaming (ATerm Terminal uses this)
+        try:
+            while True:
+                msg = await websocket.receive()
+                if msg["type"] == "websocket.receive":
+                    if "text" in msg:
+                        text = msg["text"]
+                        if text.startswith('{"type":"resize"'):
+                            try:
+                                payload = json.loads(text)
+                                if payload.get("type") == "resize":
+                                    cols = int(payload["cols"])
+                                    rows = int(payload["rows"])
+                                    winsize = struct.pack("HHHH", rows, cols, 0, 0)
+                                    fcntl.ioctl(
+                                        handle.master_fd,
+                                        termios.TIOCSWINSZ,
+                                        winsize,
+                                    )
+                            except (json.JSONDecodeError, KeyError, OSError):
+                                pass
+                            continue
+                        os.write(handle.master_fd, text.encode("utf-8"))
+                    elif "bytes" in msg:
+                        os.write(handle.master_fd, msg["bytes"])
+                elif msg["type"] == "websocket.disconnect":
+                    break
+        except WebSocketDisconnect:
+            pass
+        except Exception:
+            pass
+        finally:
+            if websocket in handle.websockets:
+                handle.websockets.remove(websocket)
+            try:
+                await websocket.close()
+            except Exception:
+                pass
         return
 
+    # Regular sidebar agent
     agent = agents[agent_id]
 
     handle = running_processes.get(agent_id)
@@ -1488,6 +2802,45 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Vault-keyed API proxy (Hostinger billing)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/proxy/hostinger/subscriptions")
+async def proxy_hostinger_subscriptions():
+    """Proxy Hostinger billing API using vaulted token.
+
+    The infrastructure-map.html Hostinger Live tab calls this instead of
+    the external API directly, so the token never reaches the browser.
+    """
+    vault = _we_vault_read()
+    token = vault.get("hostinger", "")
+    if not token:
+        return {"error": "No hostinger token in vault", "subscriptions": []}
+    import urllib.request
+    import urllib.error
+
+    req = urllib.request.Request(
+        "https://developers.hostinger.com/api/billing/v1/subscriptions",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        return data
+    except urllib.error.HTTPError as e:
+        return {
+            "error": f"Hostinger API HTTP {e.code}",
+            "detail": e.read().decode()[:500],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
 # Health & Launchd Status
 # ---------------------------------------------------------------------------
 
@@ -1501,6 +2854,7 @@ async def health_check():
 async def get_performance():
     """Server-level CPU and memory stats using resource module."""
     import resource
+
     try:
         r = resource.getrusage(resource.RUSAGE_SELF)
         return {
@@ -1525,6 +2879,96 @@ async def agent_launchd_status(agent_id: str):
         "agent_id": agent_id,
         **get_launchd_info(agent_id, agents[agent_id]),
     }
+
+
+# ---------------------------------------------------------------------------
+# Dev Launcher API proxy (forward to port 4500 backend)
+# ---------------------------------------------------------------------------
+
+_DEV_LAUNCHER_PORT = 4500
+_DEV_LAUNCHER_ROUTES = {
+    "/api/apps",
+    "/api/browse",
+    "/api/discover",
+    "/api/import",
+    "/api/cleanup",
+    "/api/config/refresh",
+}
+
+
+async def _proxy_dev_launcher(path: str, request: Request) -> Response:
+    """Forward Dev Launcher API calls to its backend on port 4500."""
+    import urllib.request
+    import urllib.error
+
+    target = f"http://127.0.0.1:{_DEV_LAUNCHER_PORT}{path}"
+    body = await request.body()
+    headers = {
+        "Content-Type": request.headers.get("content-type", "application/json"),
+        "Accept": "application/json",
+    }
+    req = urllib.request.Request(target, data=body or None, headers=headers)
+    if request.method == "POST":
+        req.method = "POST"
+    elif request.method == "PUT":
+        req.method = "PUT"
+    elif request.method == "DELETE":
+        req.method = "DELETE"
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+            return Response(
+                content=data,
+                status_code=resp.status,
+                media_type=resp.headers.get("Content-Type", "application/json"),
+            )
+    except urllib.error.HTTPError as e:
+        return Response(
+            content=e.read(),
+            status_code=e.code,
+            media_type="application/json",
+        )
+    except Exception as e:
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            status_code=502,
+            media_type="application/json",
+        )
+
+
+@app.api_route("/api/apps/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy_apps(path: str, request: Request):
+    return await _proxy_dev_launcher(f"/api/apps/{path}", request)
+
+
+@app.api_route("/api/apps", methods=["GET", "POST"])
+async def proxy_apps_root(request: Request):
+    return await _proxy_dev_launcher("/api/apps", request)
+
+
+@app.api_route("/api/browse", methods=["GET", "POST"])
+async def proxy_browse(request: Request):
+    return await _proxy_dev_launcher("/api/browse", request)
+
+
+@app.api_route("/api/discover", methods=["GET", "POST"])
+async def proxy_discover(request: Request):
+    return await _proxy_dev_launcher("/api/discover", request)
+
+
+@app.api_route("/api/import", methods=["GET", "POST"])
+async def proxy_import(request: Request):
+    return await _proxy_dev_launcher("/api/import", request)
+
+
+@app.api_route("/api/cleanup", methods=["GET", "POST"])
+async def proxy_cleanup(request: Request):
+    return await _proxy_dev_launcher("/api/cleanup", request)
+
+
+@app.api_route("/api/config/refresh", methods=["GET", "POST"])
+async def proxy_config_refresh(request: Request):
+    return await _proxy_dev_launcher("/api/config/refresh", request)
 
 
 # ---------------------------------------------------------------------------
@@ -1568,17 +3012,19 @@ async def list_automation_jobs():
 
         # Cron job (separate entry from launchd)
         if cron_expr:
-            jobs.append({
-                "agent_id": agent_id,
-                "agent_name": agent.get("name", ""),
-                "type": "cron",
-                "automation_type": "cron",
-                "schedule": cron_expr,
-                "next_run": compute_next_cron(cron_expr),
-                "last_run": metrics.get("last_started"),
-                "run_count": metrics.get("restart_count", 0),
-                "status": "scheduled",
-            })
+            jobs.append(
+                {
+                    "agent_id": agent_id,
+                    "agent_name": agent.get("name", ""),
+                    "type": "cron",
+                    "automation_type": "cron",
+                    "schedule": cron_expr,
+                    "next_run": compute_next_cron(cron_expr),
+                    "last_run": metrics.get("last_started"),
+                    "run_count": metrics.get("restart_count", 0),
+                    "status": "scheduled",
+                }
+            )
     return jobs
 
 
@@ -1591,7 +3037,11 @@ async def trigger_automation(agent_id: str):
     agent = agents[agent_id]
     try:
         handle = await spawn_process(agent_id, agent)
-        return {"spawned": True, "pid": handle.process.pid, "uptime_start": handle.started_at}
+        return {
+            "spawned": True,
+            "pid": handle.process.pid,
+            "uptime_start": handle.started_at,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1604,15 +3054,26 @@ async def enable_automation(agent_id: str):
         raise HTTPException(status_code=404, detail="Agent not found")
     agent = agents[agent_id]
     if agent.get("launchd_type", "none") == "none":
-        raise HTTPException(status_code=400, detail="Agent has no automation configured")
+        raise HTTPException(
+            status_code=400, detail="Agent has no automation configured"
+        )
     plist_path = _get_plist_path(agent_id)
     if not os.path.exists(plist_path):
         _generate_launchd_plist(agent_id, agent)
     try:
-        r = subprocess.run(["launchctl", "load", plist_path], capture_output=True, timeout=10)
+        r = subprocess.run(
+            ["launchctl", "load", plist_path], capture_output=True, timeout=10
+        )
         if r.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"launchctl load failed: {r.stderr.decode(errors='replace')}")
-        return {"agent_id": agent_id, "enabled": True, **get_launchd_info(agent_id, agent)}
+            raise HTTPException(
+                status_code=500,
+                detail=f"launchctl load failed: {r.stderr.decode(errors='replace')}",
+            )
+        return {
+            "agent_id": agent_id,
+            "enabled": True,
+            **get_launchd_info(agent_id, agent),
+        }
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=500, detail="launchctl load timed out")
     except Exception as e:
@@ -1627,7 +3088,9 @@ async def disable_automation(agent_id: str):
         raise HTTPException(status_code=404, detail="Agent not found")
     plist_path = _get_plist_path(agent_id)
     try:
-        subprocess.run(["launchctl", "unload", plist_path], capture_output=True, timeout=10)
+        subprocess.run(
+            ["launchctl", "unload", plist_path], capture_output=True, timeout=10
+        )
         return {"agent_id": agent_id, "disabled": True}
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=500, detail="launchctl unload timed out")
@@ -1662,57 +3125,85 @@ async def get_automation_logs(agent_id: str):
 async def cron_helper():
     """Return a map of human-readable cron presets."""
     return [
-        {"label": "Every minute",    "expression": "* * * * *"},
-        {"label": "Every 5 minutes",   "expression": "*/5 * * * *"},
-        {"label": "Every 15 minutes",  "expression": "*/15 * * * *"},
-        {"label": "Every 30 minutes",  "expression": "*/30 * * * *"},
-        {"label": "Every hour",        "expression": "0 * * * *"},
-        {"label": "Every 2 hours",     "expression": "0 */2 * * *"},
-        {"label": "Every 6 hours",    "expression": "0 */6 * * *"},
+        {"label": "Every minute", "expression": "* * * * *"},
+        {"label": "Every 5 minutes", "expression": "*/5 * * * *"},
+        {"label": "Every 15 minutes", "expression": "*/15 * * * *"},
+        {"label": "Every 30 minutes", "expression": "*/30 * * * *"},
+        {"label": "Every hour", "expression": "0 * * * *"},
+        {"label": "Every 2 hours", "expression": "0 */2 * * *"},
+        {"label": "Every 6 hours", "expression": "0 */6 * * *"},
         {"label": "Daily at midnight", "expression": "0 0 * * *"},
-        {"label": "Daily at 6 AM",    "expression": "0 6 * * *"},
-        {"label": "Daily at noon",    "expression": "0 12 * * *"},
-        {"label": "Daily at 6 PM",    "expression": "0 18 * * *"},
-        {"label": "Weekly (Sunday)",  "expression": "0 0 * * 0"},
-        {"label": "Monthly (1st)",   "expression": "0 0 1 * *"},
-        {"label": "Quarterly",        "expression": "0 0 1 */3 *"},
+        {"label": "Daily at 6 AM", "expression": "0 6 * * *"},
+        {"label": "Daily at noon", "expression": "0 12 * * *"},
+        {"label": "Daily at 6 PM", "expression": "0 18 * * *"},
+        {"label": "Weekly (Sunday)", "expression": "0 0 * * 0"},
+        {"label": "Monthly (1st)", "expression": "0 0 1 * *"},
+        {"label": "Quarterly", "expression": "0 0 1 */3 *"},
     ]
 
 
 # ---------------------------------------------------------------------------
-# ControlBoard endpoints — Page 1: Governance Dashboard
+# Kernel endpoints — Page 1: Project Control
 # ---------------------------------------------------------------------------
 #
-# Authority: plans/controlboard.md Step 4 + plans/ROADMAP.md §4 (ControlBoard)
+# Authority: SSOT/control-center_SSOT.md § Project Control
 # Schema:    plans/ROADMAP.md §3.E (repository_report.json fields)
 # Quarantine protocol: .supercache/contracts/repo-sanitation.md §3
 #
-# These endpoints power the Governance Dashboard tab. They walk the user's
+# These endpoints power the Project Control tab. They walk the user's
 # drives looking for FLOYD.md-bearing projects, read each project's
 # SSOT/repository_report.json if present, and aggregate quarantine state for
-# the persistent ControlBoard alert.
+# the persistent Project Control alert.
 
-import time
 from pathlib import Path as _PathLib
 
 _DRIVES = (_PathLib("/Volumes/SanDisk1Tb"), _PathLib("/Volumes/Storage"))
-_PROJECT_WALK_EXCLUDE = frozenset({
-    ".Spotlight-V100", ".fseventsd", ".Trashes", ".DocumentRevisions-V100",
-    ".TemporaryItems", "node_modules", ".venv", "venv", ".git", ".supercache",
-    ".pnpm-store", "__pycache__", ".pytest_cache", ".cache", "Library",
-})
-_T7_OFF_LIMITS = _PathLib("/Volumes/T7")  # per ~/.claude/CLAUDE.md — Time Machine target
+_PROJECT_WALK_EXCLUDE = frozenset(
+    {
+        ".Spotlight-V100",
+        ".fseventsd",
+        ".Trashes",
+        ".DocumentRevisions-V100",
+        ".TemporaryItems",
+        "node_modules",
+        ".venv",
+        "venv",
+        ".git",
+        ".supercache",
+        ".pnpm-store",
+        "__pycache__",
+        ".pytest_cache",
+        ".cache",
+        "Library",
+    }
+)
+_T7_OFF_LIMITS = _PathLib(
+    "/Volumes/T7"
+)  # per ~/.claude/CLAUDE.md — Time Machine target
 
-# Read canonical .supercache version once at startup (per controlboard plan Step 4)
+# Read canonical .supercache version once at startup
 try:
-    _CANONICAL_VERSION = _PathLib("/Volumes/SanDisk1Tb/.supercache/VERSION").read_text().strip()
+    _CANONICAL_VERSION = (
+        _PathLib("/Volumes/SanDisk1Tb/.supercache/VERSION").read_text().strip()
+    )
 except OSError:
     _CANONICAL_VERSION = "unknown"
 
 # 30-second TTL cache for the project walk
-_PROJECTS_CACHE: dict[str, object] = {"ts": 0.0, "data": None}
-_QUARANTINE_CACHE: dict[str, object] = {"ts": 0.0, "data": None}
+_PROJECTS_CACHE: dict[str, float | list[dict] | None] = {"ts": 0.0, "data": None}
+_QUARANTINE_CACHE: dict[str, float | dict | None] = {"ts": 0.0, "data": None}
 _CACHE_TTL_SECONDS = 30.0
+
+
+def _cache_fresh(
+    cache: Mapping[str, float | list[dict] | dict | None], now: float
+) -> bool:
+    ts = cache["ts"]
+    return (
+        isinstance(ts, float)
+        and cache["data"] is not None
+        and (now - ts) < _CACHE_TTL_SECONDS
+    )
 
 
 def _walk_for_projects(drive: _PathLib) -> list[_PathLib]:
@@ -1764,6 +3255,7 @@ def _project_status(proj: _PathLib, report: dict | None) -> str:
     if last_bootstrap:
         try:
             from datetime import datetime as _dt, timezone as _tz
+
             ts = _dt.fromisoformat(last_bootstrap)
             age_days = (_dt.now(_tz.utc) - ts.astimezone(_tz.utc)).days
             if age_days <= 7:
@@ -1797,22 +3289,30 @@ def _scan_projects() -> list[dict]:
         for proj in _walk_for_projects(drive):
             report = _read_report(proj)
             status = _project_status(proj, report)
-            projects.append({
-                "name": proj.name,
-                "path": str(proj),
-                "drive": drive.name,
-                "status": status,
-                "completion_percentage": report.get("completion_percentage", 0) if report else 0,
-                "tech_stack": report.get("tech_stack", []) if report else [],
-                "last_bootstrap": report.get("_last_verified", "") if report else "",
-                "report": report,
-                "links": {
-                    "floyd_md": f"file://{proj}/FLOYD.md",
-                    "ssot": f"file://{proj}/SSOT",
-                    "report_json": f"file://{proj}/SSOT/repository_report.json" if report else None,
-                    "project_root": f"file://{proj}",
-                },
-            })
+            projects.append(
+                {
+                    "name": proj.name,
+                    "path": str(proj),
+                    "drive": drive.name,
+                    "status": status,
+                    "completion_percentage": report.get("completion_percentage", 0)
+                    if report
+                    else 0,
+                    "tech_stack": report.get("tech_stack", []) if report else [],
+                    "last_bootstrap": report.get("_last_verified", "")
+                    if report
+                    else "",
+                    "report": report,
+                    "links": {
+                        "floyd_md": f"/api/fs/serve?path={_url_quote(str(proj / 'FLOYD.md'))}",
+                        "ssot": f"/api/fs/list?path={_url_quote(str(proj / 'SSOT'))}",
+                        "report_json": f"/api/fs/serve?path={_url_quote(str(proj / 'SSOT' / 'repository_report.json'))}"
+                        if report
+                        else None,
+                        "project_root": f"/api/fs/list?path={_url_quote(str(proj))}",
+                    },
+                }
+            )
     # Sort: completion% desc, then last_bootstrap asc (older bootstrap loses tiebreak)
     projects.sort(key=lambda p: (-p["completion_percentage"], p["last_bootstrap"]))
     return projects
@@ -1835,19 +3335,25 @@ def _scan_quarantine() -> dict:
                     continue
                 # Count files excluding LEDGER.jsonl and *.WHY.md companions
                 for entry in date_dir.rglob("*"):
-                    if entry.is_file() and not entry.name.endswith(".WHY.md") and entry.name != "LEDGER.jsonl":
+                    if (
+                        entry.is_file()
+                        and not entry.name.endswith(".WHY.md")
+                        and entry.name != "LEDGER.jsonl"
+                    ):
                         count += 1
                 if count > 0 and (not project_oldest or date_dir.name < project_oldest):
                     project_oldest = date_dir.name
             if count > 0:
                 total += count
-                by_project.append({
-                    "name": proj.name,
-                    "path": str(proj),
-                    "count": count,
-                    "oldest_date": project_oldest,
-                    "link": f"file://{qdir}",
-                })
+                by_project.append(
+                    {
+                        "name": proj.name,
+                        "path": str(proj),
+                        "count": count,
+                        "oldest_date": project_oldest,
+                        "link": f"/api/fs/list?path={_url_quote(str(qdir))}",
+                    }
+                )
                 if not oldest or project_oldest < oldest:
                     oldest = project_oldest
     return {"total": total, "oldest_date": oldest, "by_project": by_project}
@@ -1857,19 +3363,28 @@ def _scan_quarantine() -> dict:
 async def list_projects():
     """List every governed project with status + repository_report.json data."""
     now = time.time()
-    if _PROJECTS_CACHE["data"] is not None and (now - _PROJECTS_CACHE["ts"]) < _CACHE_TTL_SECONDS:
-        return {"projects": _PROJECTS_CACHE["data"], "cached": True, "canonical_version": _CANONICAL_VERSION}
+    if _cache_fresh(_PROJECTS_CACHE, now):
+        data = _PROJECTS_CACHE["data"]
+        return {
+            "projects": data,
+            "cached": True,
+            "canonical_version": _CANONICAL_VERSION,
+        }
     projects = _scan_projects()
     _PROJECTS_CACHE["data"] = projects
     _PROJECTS_CACHE["ts"] = now
-    return {"projects": projects, "cached": False, "canonical_version": _CANONICAL_VERSION}
+    return {
+        "projects": projects,
+        "cached": False,
+        "canonical_version": _CANONICAL_VERSION,
+    }
 
 
 @app.get("/api/quarantine-summary")
 async def quarantine_summary():
     """Aggregate quarantine state across the project portfolio."""
     now = time.time()
-    if _QUARANTINE_CACHE["data"] is not None and (now - _QUARANTINE_CACHE["ts"]) < _CACHE_TTL_SECONDS:
+    if _cache_fresh(_QUARANTINE_CACHE, now):
         result = _QUARANTINE_CACHE["data"]
         return {**result, "cached": True}  # type: ignore[dict-item]
     result = _scan_quarantine()
@@ -1879,10 +3394,10 @@ async def quarantine_summary():
 
 
 # ---------------------------------------------------------------------------
-# ControlBoard endpoint — Page 2: Six-Project Workspace ranking (Step 5)
+# Kernel endpoint — Page: Workspace ranking
 # ---------------------------------------------------------------------------
 #
-# Authority: plans/controlboard.md Step 5
+# Authority: SSOT/control-center_SSOT.md § Workspace
 #
 # GET /api/projects/top-six-active — returns the top 6 incomplete projects
 # (completion% < 100), sorted by completion% desc with last_bootstrap asc as
@@ -1892,10 +3407,13 @@ async def quarantine_summary():
 def _rank_top_six(projects: list[dict]) -> list[dict]:
     """Pure ranker — split out so tests can hit it without scanning drives."""
     incomplete = [p for p in projects if p.get("completion_percentage", 0) < 100]
-    incomplete.sort(key=lambda p: (
-        -p.get("completion_percentage", 0),
-        p.get("last_bootstrap", "") or "",  # empty strings sort first → oldest first
-    ))
+    incomplete.sort(
+        key=lambda p: (
+            -p.get("completion_percentage", 0),
+            p.get("last_bootstrap", "")
+            or "",  # empty strings sort first → oldest first
+        )
+    )
     return incomplete[:6]
 
 
@@ -1903,20 +3421,167 @@ def _rank_top_six(projects: list[dict]) -> list[dict]:
 async def top_six_active():
     """Return the 6 highest-completion incomplete projects to populate the Workspace."""
     now = time.time()
-    if _PROJECTS_CACHE["data"] is not None and (now - _PROJECTS_CACHE["ts"]) < _CACHE_TTL_SECONDS:
-        projects = _PROJECTS_CACHE["data"]
+    if _cache_fresh(_PROJECTS_CACHE, now):
+        data = _PROJECTS_CACHE["data"]
+        projects = data if isinstance(data, list) else _scan_projects()
     else:
         projects = _scan_projects()
         _PROJECTS_CACHE["data"] = projects
         _PROJECTS_CACHE["ts"] = now
-    return {"projects": _rank_top_six(projects), "canonical_version": _CANONICAL_VERSION}
+    return {
+        "projects": _rank_top_six(projects),
+        "canonical_version": _CANONICAL_VERSION,
+    }
 
 
 # ---------------------------------------------------------------------------
-# ControlBoard endpoints — Page 5: Mac System Health
+# Bootstrap & Finisher dispatch (BETA-06)
+# ---------------------------------------------------------------------------
+# These endpoints allow the Workspace tab to trigger project bootstrap and
+# finisher workflows. They find the project's PROMPT.md and execute it as
+# a subprocess command. For beta, this is a fire-and-forget dispatch.
+
+import subprocess as _subprocess_we
+
+
+def _find_project_dir(name: str) -> str | None:
+    """Find a project directory by name across known roots."""
+    for root in ["/Volumes/Storage", "/Volumes/SanDisk1Tb"]:
+        candidate = os.path.join(root, name)
+        if os.path.isdir(candidate):
+            return candidate
+        # Also check subdirectories (e.g. Legacy Agents/name)
+        for parent in os.listdir(root):
+            parent_path = os.path.join(root, parent)
+            if os.path.isdir(parent_path):
+                candidate = os.path.join(parent_path, name)
+                if os.path.isdir(candidate):
+                    return candidate
+    return None
+
+
+@app.post("/api/projects/{name}/bootstrap")
+async def project_bootstrap(name: str) -> dict:
+    """Bootstrap a project: run its bootstrap/verification workflow."""
+    project_dir = _find_project_dir(name)
+    if not project_dir:
+        raise HTTPException(status_code=404, detail=f"Project not found: {name}")
+
+    # Look for bootstrap script or PROMPT.md
+    bootstrap_script = os.path.join(project_dir, "scripts", "bootstrap.sh")
+    prompt_file = os.path.join(project_dir, "PROMPT.md")
+    makefile = os.path.join(project_dir, "Makefile")
+
+    commands = []
+    if os.path.isfile(bootstrap_script):
+        commands.append(f"bash {bootstrap_script}")
+    elif os.path.isfile(makefile):
+        commands.append(
+            f"cd '{project_dir}' && make bootstrap 2>&1 || make verify 2>&1 || make test 2>&1"
+        )
+    elif os.path.isfile(prompt_file):
+        commands.append(f"cd '{project_dir}' && cat PROMPT.md")
+    else:
+        return {
+            "ok": False,
+            "error": "No bootstrap script, Makefile, or PROMPT.md found",
+            "project": name,
+            "path": project_dir,
+        }
+
+    # Fire-and-forget execution
+    try:
+        cmd = commands[0]
+        proc = _subprocess_we.Popen(
+            cmd,
+            shell=True,
+            cwd=project_dir,
+            stdout=_subprocess_we.PIPE,
+            stderr=_subprocess_we.STDOUT,
+        )
+        # Give it 5 seconds to start, then report status
+        try:
+            stdout, _ = proc.communicate(timeout=5)
+            output = stdout.decode("utf-8", errors="replace")[:2000]
+            return {
+                "ok": proc.returncode == 0,
+                "project": name,
+                "path": project_dir,
+                "command": cmd,
+                "output": output,
+                "returncode": proc.returncode,
+            }
+        except _subprocess_we.TimeoutExpired:
+            return {
+                "ok": True,
+                "project": name,
+                "path": project_dir,
+                "command": cmd,
+                "output": "Bootstrap started (still running)...",
+                "pid": proc.pid,
+            }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "project": name, "path": project_dir}
+
+
+@app.post("/api/projects/{name}/finisher")
+async def project_finisher(name: str) -> dict:
+    """Run finisher workflow on a project: verify, test, lint."""
+    project_dir = _find_project_dir(name)
+    if not project_dir:
+        raise HTTPException(status_code=404, detail=f"Project not found: {name}")
+
+    # Determine what to run
+    makefile = os.path.join(project_dir, "Makefile")
+    commands = []
+    if os.path.isfile(makefile):
+        # Try verify, then test, then lint
+        for target in ["verify", "test", "lint"]:
+            # Check if target exists in Makefile
+            try:
+                with open(makefile) as f:
+                    if f"{target}:" in f.read():
+                        commands.append(f"make {target}")
+            except Exception:
+                pass
+    if not commands:
+        commands.append("echo 'No finisher targets found'")
+
+    results = []
+    for cmd in commands:
+        try:
+            proc = _subprocess_we.run(
+                cmd,
+                shell=True,
+                cwd=project_dir,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            results.append(
+                {
+                    "command": cmd,
+                    "returncode": proc.returncode,
+                    "output": (proc.stdout + proc.stderr)[:1000],
+                }
+            )
+        except Exception as e:
+            results.append({"command": cmd, "error": str(e)})
+
+    all_ok = all(r.get("returncode", 1) == 0 for r in results)
+    return {
+        "ok": all_ok,
+        "project": name,
+        "path": project_dir,
+        "results": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Kernel endpoints — System Health
 # ---------------------------------------------------------------------------
 #
-# Authority: plans/controlboard.md Step 12
+# Authority: SSOT/control-center_SSOT.md § System Health
 # Producer:  scripts/system_scan.py (writes .floyd/system-health-cache.json)
 # Consumer:  the System Health tab in index.html
 #
@@ -1968,7 +3633,11 @@ async def get_system_health():
     cached = mod.read_cache()
     if cached is None:
         return {"error": "scan failed and no cache exists"}
-    return {**cached, "cached": True, "fresh": mod.cache_is_fresh(_SYSTEM_SCAN_FRESH_SECONDS)}
+    return {
+        **cached,
+        "cached": True,
+        "fresh": mod.cache_is_fresh(_SYSTEM_SCAN_FRESH_SECONDS),
+    }
 
 
 @app.post("/api/system-health/rescan")
@@ -1987,12 +3656,12 @@ async def rescan_system_health():
 
 
 # ---------------------------------------------------------------------------
-# ControlBoard endpoints — Dual Terminal sidepanel (Step 6)
+# Kernel endpoints — Dual Console sidepanel
 # ---------------------------------------------------------------------------
 #
-# Authority: plans/controlboard.md Step 6
+# Authority: SSOT/control-center_SSOT.md § Dual Console
 #
-# These two endpoints power the "Dual Terminal" tab — a port of the Floyd TTY
+# These two endpoints power the "Dual Console" tab — a port of the Floyd TTY
 # Bridge sidepanel UI. They are thin wrappers around the existing agent
 # lifecycle: each sidepanel pane spawns an ephemeral agent (tagged so the UI
 # can filter), attaches to /ws/{agent_id}, and deletes on tab close.
@@ -2013,7 +3682,7 @@ async def spawn_sidepanel_agent(req: Optional[SidepanelSpawnRequest] = None):
 
     Body (all fields optional):
       directory   — working directory; defaults to $HOME
-      label       — UI label; defaults to "Dual Terminal"
+      label       — UI label; defaults to "Dual Console"
       name_prefix — agent name prefix; defaults to "sidepanel"
       extra_tags  — additional tags (the 'ephemeral' and 'sidepanel' tags
                     are always applied)
@@ -2031,7 +3700,7 @@ async def spawn_sidepanel_agent(req: Optional[SidepanelSpawnRequest] = None):
     directory = req.directory or home
     if not _PathLib(directory).is_dir():
         directory = home  # fall back silently rather than refuse
-    label = req.label or "Dual Terminal"
+    label = req.label or "Dual Console"
     name_prefix = req.name_prefix or "sidepanel"
     base_tags = ["ephemeral", "sidepanel"]
     if req.extra_tags:
@@ -2061,7 +3730,12 @@ async def spawn_sidepanel_agent(req: Optional[SidepanelSpawnRequest] = None):
         await spawn_process(agent_id, agents[agent_id])
     except Exception as exc:  # pragma: no cover — defensive
         logger.warning("sidepanel spawn_process failed: %s", exc)
-    return {"agent_id": agent_id, "name": new_agent.name, "shell": shell, "directory": directory}
+    return {
+        "agent_id": agent_id,
+        "name": new_agent.name,
+        "shell": shell,
+        "directory": directory,
+    }
 
 
 @app.delete("/api/sidepanel/{agent_id}")
@@ -2072,7 +3746,10 @@ async def delete_sidepanel_agent(agent_id: str):
         raise HTTPException(status_code=404, detail="Agent not found")
     tags = agents[agent_id].get("tags") or []
     if "sidepanel" not in tags:
-        raise HTTPException(status_code=400, detail="Refusing to delete non-sidepanel agent via this endpoint")
+        raise HTTPException(
+            status_code=400,
+            detail="Refusing to delete non-sidepanel agent via this endpoint",
+        )
     await kill_process(agent_id)
     _remove_launchd_plist(agent_id)
     del agents[agent_id]

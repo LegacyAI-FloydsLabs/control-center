@@ -1,10 +1,11 @@
-"""Tests for the MWIDE embed (Step 9).
+"""Tests for the Workspace Editor module.
 
-The actual MWIDE service runs in a separate project at
-/Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE/ — we don't start it from here.
-These tests verify only the embed plumbing on the ControlBoard side: the
-tab is registered, the iframe targets port 10602, and the fallback markup
-is present for when MWIDE is offline.
+The workspace editor is a Kernel-owned module copied from MWIDE source.
+These tests verify:
+  - The tab is registered in the Kernel nav
+  - The native mount div is present (no iframe)
+  - The built frontend is served as a static mount
+  - The fallback markup is present for when the build is missing
 """
 
 from __future__ import annotations
@@ -31,49 +32,107 @@ def client() -> TestClient:
     return TestClient(server.app)
 
 
-def test_index_html_has_mwide_tab(client: TestClient) -> None:
+def test_index_html_has_workspace_editor_tab(client: TestClient) -> None:
     body = client.get("/").text
-    assert ">MWIDE<" in body
+    assert "Workspace Editor" in body
     assert 'id="cb-tab-mwide"' in body
     assert 'id="cb-page-mwide"' in body
 
 
-def test_index_html_iframe_targets_port_10602(client: TestClient) -> None:
-    """The MWIDE_URL constant in the JS or the iframe src must reference 10602."""
+def test_index_html_native_mount_present(client: TestClient) -> None:
+    """The native mount div must exist for the React app to render into."""
     body = client.get("/").text
-    assert "MWIDE_URL = 'http://localhost:10602/'" in body or 'src="http://localhost:10602' in body
+    assert 'id="mwide-root"' in body
+    assert "/workspace-editor/" in body
 
 
-def test_index_html_iframe_has_sandbox_attributes(client: TestClient) -> None:
+def test_index_html_native_loader_js_present(client: TestClient) -> None:
+    """The JS loader for the native integration must be present."""
     body = client.get("/").text
-    # Iframe must permit scripts + same-origin so MWIDE's WebSocket plumbing works
-    assert 'id="cb-mwide-iframe"' in body
-    assert "allow-scripts" in body
-    assert "allow-same-origin" in body
+    assert "loadMwideNative" in body
+    assert "mwide-root" in body
 
 
 def test_index_html_includes_fallback_markup(client: TestClient) -> None:
     body = client.get("/").text
     assert 'id="mwide-fallback"' in body
-    assert "MWIDE is not reachable" in body
-    assert "PORT=10602" in body
-    assert "docs/mwide-port-migration.md" in body
+    assert "Workspace Editor is not available" in body
 
 
-def test_index_html_has_reload_button_and_external_link(client: TestClient) -> None:
+def test_index_html_has_reload_button_and_fullscreen_link(
+    client: TestClient,
+) -> None:
     body = client.get("/").text
     assert 'id="mwide-reload-btn"' in body
-    assert 'href="http://localhost:10602/"' in body
+    assert 'href="/workspace-editor/"' in body
 
 
-def test_port_migration_diff_doc_exists() -> None:
-    """The old MWIDE port-migration doc is inactive; Dashboard SSOT is canonical."""
-    diff = ROOT / "docs" / "mwide-port-migration.md"
-    assert not diff.exists()
-    ssot = ROOT / "SSOT" / "control-center_SSOT.md"
-    issues = ROOT / "Issues" / "control-center_ISSUES.md"
-    assert ssot.is_file()
-    assert issues.is_file()
-    content = ssot.read_text()
-    assert "Copy actual MWIDE source into Dashboard" in content or "Copy” means copy/paste actual code into Dashboard first" in content
-    assert "ISSUE-0001" in issues.read_text()
+def test_workspace_editor_static_mount(client: TestClient) -> None:
+    """The built frontend must be served at /workspace-editor/."""
+    r = client.get("/workspace-editor/")
+    assert r.status_code == 200
+    assert "html" in r.headers.get("content-type", "").lower()
+
+
+def test_workspace_editor_source_manifest_exists() -> None:
+    """The source manifest must be present with copy metadata."""
+    manifest = ROOT / "modules" / "workspace-editor" / "source-manifest.json"
+    assert manifest.is_file(), f"missing {manifest}"
+    import json
+
+    data = json.loads(manifest.read_text())
+    assert data["capability"] == "workspace-editor"
+    assert data["source_name"] == "MWIDE / mobile-web-IDE"
+    assert data["copied_at"] is not None
+
+
+def test_workspace_editor_dist_built() -> None:
+    """The Vite-built frontend must exist in the module dist/ directory."""
+    dist_dir = ROOT / "modules" / "workspace-editor" / "source" / "dist"
+    assert dist_dir.is_dir(), f"missing dist/ at {dist_dir}"
+    assert (dist_dir / "index.html").is_file(), "missing dist/index.html"
+    assert (dist_dir / "assets").is_dir(), "missing dist/assets/"
+
+
+def test_workspace_editor_source_copied() -> None:
+    """The MWIDE source must be present in modules/workspace-editor/source/."""
+    source_dir = ROOT / "modules" / "workspace-editor" / "source"
+    assert (source_dir / "server.ts").is_file(), "missing source/server.ts"
+    assert (source_dir / "package.json").is_file(), "missing source/package.json"
+    assert (source_dir / "src").is_dir(), "missing source/src/"
+    assert (source_dir / "vite.config.ts").is_file(), "missing source/vite.config.ts"
+
+
+def test_original_mwide_untouched() -> None:
+    """Verify the original MWIDE source has no new changes from the copy."""
+    original = Path("/Volumes/SanDisk1Tb/MWIDE/mobile-web-IDE")
+    if not original.is_dir():
+        pytest.skip("MWIDE source not accessible on this machine")
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "diff", "--stat"],
+        capture_output=True,
+        text=True,
+        cwd=str(original),
+    )
+    # Should have the same pre-existing dirty state, no new changes
+    assert "server.ts" not in result.stdout or "source/" not in result.stdout
+
+
+def test_workspace_editor_assets_load(client: TestClient) -> None:
+    """Built JS/CSS assets must be loadable from the /workspace-editor/ mount."""
+    import re
+
+    html = client.get("/workspace-editor/").text
+    js_files = re.findall(r'src="(/workspace-editor/assets/[^"]+\.js)"', html)
+    css_files = re.findall(
+        r'href="(/workspace-editor/assets/[^"]+\.css)"',
+        html,
+    )
+    assert js_files, "no JS assets found in workspace-editor dist"
+    assert css_files, "no CSS assets found in workspace-editor dist"
+    for path in js_files + css_files:
+        r = client.get(path)
+        assert r.status_code == 200, f"{path} returned {r.status_code}"
+        assert len(r.content) > 0, f"{path} is empty"

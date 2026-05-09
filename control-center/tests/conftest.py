@@ -13,10 +13,12 @@ def _ensure_server_up():
     """Skip the entire suite if the server isn't already running.
 
     Tests do NOT start the server themselves — they assume a live launchd-managed instance on
-    port 9527. This avoids accidentally killing the user's daily-driver session.
+    port 10527. This avoids accidentally killing the user's daily-driver session.
     """
     if not is_server_up(timeout=2.0):
-        pytest.skip(f"TCC server not reachable at {base_url()} — start it before running tests")
+        pytest.skip(
+            f"TCC server not reachable at {base_url()} — start it before running tests"
+        )
 
 
 @pytest.fixture(scope="session")

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legacy AI — Spend Watch</title>
+<style>
+  /* Google Fonts removed — using system stack for zero-vendor dependency */
+
+  :root {
+    --bg: #f8f6f1;
+    --bg-soft: #f1ede4;
+    --paper: #ffffff;
+    --paper-warm: #fdfcf8;
+    --ink: #1a1814;
+    --ink-soft: #4a463f;
+    --ink-mute: #8a857c;
+    --ink-faint: #b8b3a8;
+    --line: #ece7dc;
+    --line-strong: #d9d3c5;
+
+    --accent: #2d5a4f;
+    --accent-soft: rgba(45, 90, 79, 0.08);
+    --accent-line: rgba(45, 90, 79, 0.18);
+
+    --gold: #b08a3e;
+    --gold-soft: rgba(176, 138, 62, 0.10);
+    --gold-line: rgba(176, 138, 62, 0.25);
+
+    --rose: #b8553f;
+    --rose-soft: rgba(184, 85, 63, 0.10);
+    --rose-line: rgba(184, 85, 63, 0.25);
+
+    --sage: #7a8c6a;
+    --sage-soft: rgba(122, 140, 106, 0.10);
+
+    --slate: #3d4a5c;
+
+    --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.04), 0 0 0 1px rgba(26, 24, 20, 0.04);
+    --shadow-md: 0 2px 8px rgba(26, 24, 20, 0.04), 0 0 0 1px rgba(26, 24, 20, 0.05);
+    --shadow-lg: 0 8px 24px rgba(26, 24, 20, 0.06), 0 0 0 1px rgba(26, 24, 20, 0.05);
+
+    --f-display: 'Fraunces', Georgia, serif;
+    --f-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --f-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(at 0% 0%, rgba(176, 138, 62, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(45, 90, 79, 0.03) 0px, transparent 50%);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 56px 40px 80px;
+  }
+
+  /* ========== HEADER ========== */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .masthead .brand {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 12px;
+  }
+  .masthead h1 {
+    font-family: var(--f-display);
+    font-size: 44px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .masthead h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .masthead .sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    max-width: 460px;
+  }
+  .masthead .meta {
+    text-align: right;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    line-height: 1.7;
+  }
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    border-radius: 99px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* ========== KPIs ========== */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .kpi {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 26px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .kpi:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  .kpi.hero {
+    background: linear-gradient(135deg, #fdfcf8 0%, #f8f4ea 100%);
+    border-color: var(--gold-line);
+  }
+  .kpi-label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-mute);
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-family: var(--f-display);
+    font-size: 38px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .kpi.hero .kpi-value { color: var(--gold); }
+  .kpi-foot {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+  .kpi-foot .delta-up   { color: var(--rose); }
+  .kpi-foot .delta-down { color: var(--accent); }
+
+  /* ========== SECTION HEADERS ========== */
+  .section {
+    margin-bottom: 56px;
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: var(--f-display);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .section-title em { font-style: italic; font-weight: 400; color: var(--ink-mute); }
+  .section-sub {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ========== ALERTS / TIMELINE ========== */
+  .alerts {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 8px 0;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .alert {
+    display: grid;
+    grid-template-columns: 90px 1fr 1.4fr 110px 80px;
+    gap: 20px;
+    align-items: center;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.15s;
+  }
+  .alert:last-child { border-bottom: none; }
+  .alert:hover { background: var(--paper-warm); }
+  .alert.warn { background: linear-gradient(90deg, var(--gold-soft) 0%, transparent 60%); }
+  .alert.warn:hover { background: linear-gradient(90deg, rgba(176, 138, 62, 0.16) 0%, transparent 60%); }
+
+  .alert-date {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .alert-date small {
+    display: block;
+    font-size: 9px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .alert-vendor {
+    font-family: var(--f-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .alert-vendor small {
+    display: block;
+    font-family: var(--f-body);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .alert-note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .alert-amount {
+    font-family: var(--f-mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: right;
+  }
+  .alert-amount.tbd { color: var(--ink-mute); font-weight: 400; font-style: italic; }
+  .alert-pill {
+    justify-self: end;
+  }
+
+  /* ========== BADGES ========== */
+  .badge {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+  .badge-info  { background: var(--accent-soft); color: var(--accent); }
+  .badge-warn  { background: var(--gold-soft);   color: var(--gold); }
+  .badge-risk  { background: var(--rose-soft);   color: var(--rose); }
+  .badge-ghost { background: transparent; color: var(--ink-mute); border: 1px solid var(--line-strong); }
+
+  /* ========== TWO-COL LAYOUT ========== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 28px;
+    margin-bottom: 56px;
+  }
+
+  /* ========== TABLE ========== */
+  .ledger {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .ledger-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.4fr 80px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.15s;
+  }
+  .ledger-row:last-child { border-bottom: none; }
+  .ledger-row.head {
+    background: var(--paper-warm);
+    font-family: var(--f-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-mute);
+    padding: 12px 24px;
+    font-weight: 600;
+  }
+  .ledger-row.body:hover { background: var(--paper-warm); }
+  .ledger-vendor {
+    font-family: var(--f-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .ledger-vendor small {
+    display: block;
+    font-family: var(--f-body);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-mute);
+    margin-top: 2px;
+  }
+  .ledger-cell {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .ledger-cell.amount { color: var(--ink); font-weight: 500; }
+
+  /* ========== CHART ========== */
+  .chart-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+  }
+  .chart-title {
+    font-family: var(--f-display);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .chart-sub {
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-bottom: 24px;
+  }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 60px;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 12px;
+  }
+  .bar-row .label {
+    font-family: var(--f-body);
+    font-weight: 500;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bar-track {
+    background: var(--bg-soft);
+    border-radius: 6px;
+    height: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--accent) 0%, #4a8474 100%);
+    transition: width 0.5s ease;
+  }
+  .bar-fill.gold  { background: linear-gradient(90deg, var(--gold) 0%, #d4a955 100%); }
+  .bar-fill.rose  { background: linear-gradient(90deg, var(--rose) 0%, #d8745c 100%); }
+  .bar-fill.sage  { background: linear-gradient(90deg, var(--sage) 0%, #9ba88c 100%); }
+  .bar-fill.slate { background: linear-gradient(90deg, var(--slate) 0%, #5e6e84 100%); }
+  .bar-row .amt {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 500;
+    text-align: right;
+  }
+
+  /* ========== INSIGHT CARDS ========== */
+  .insights {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+  .insight {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .insight.flag-warn { border-left: 3px solid var(--gold); }
+  .insight.flag-risk { border-left: 3px solid var(--rose); }
+  .insight.flag-info { border-left: 3px solid var(--accent); }
+  .insight-tag {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-mute);
+    margin-bottom: 10px;
+  }
+  .insight-title {
+    font-family: var(--f-display);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .insight-body {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+
+  /* ========== ALTERNATIVES ========== */
+  .alts {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: var(--shadow-sm);
+  }
+  .alt {
+    display: grid;
+    grid-template-columns: 1fr 14px 1fr 1.5fr;
+    gap: 20px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .alt:last-child { border-bottom: none; }
+  .alt-current {
+    font-family: var(--f-display);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .alt-arrow {
+    color: var(--ink-faint);
+    font-size: 16px;
+    text-align: center;
+  }
+  .alt-target {
+    font-family: var(--f-display);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .alt-rationale {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  /* ========== FOOTER ========== */
+  .footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 900px) {
+    .wrap { padding: 32px 20px; }
+    .masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .masthead .meta { text-align: left; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .insights { grid-template-columns: 1fr; }
+    .alert { grid-template-columns: 1fr; gap: 8px; }
+    .ledger-row { grid-template-columns: 1fr 1fr; }
+    .ledger-row.head { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ====================== MASTHEAD ====================== -->
+  <header class="masthead">
+    <div>
+      <div class="brand">Legacy AI · Floyd's Labs</div>
+      <h1>Spend <em>Watch</em></h1>
+      <div class="sub">Your tech &amp; AI spend, gathered from inboxes, receipts, and card activity. Refreshed three times daily.</div>
+      <div class="live-pill"><span class="live-dot"></span> Live · auto-refresh</div>
+    </div>
+    <div class="meta">
+      <div>Last updated</div>
+      <div style="color:var(--ink); font-size:13px; font-weight:500;">Apr 30, 2026 · 22:39 ET</div>
+      <div style="margin-top:8px;">Source · Gmail + Cash App</div>
+      <div>Window · 120 days</div>
+    </div>
+  </header>
+
+  <!-- ====================== KPI ROW ====================== -->
+  <div class="kpi-row">
+    <div class="kpi hero">
+      <div class="kpi-label">Next 7 days · committed</div>
+      <div class="kpi-value">$256<span style="font-size:24px; color:var(--ink-mute);">.00</span></div>
+      <div class="kpi-foot">Anthropic Max ($200) + DigitalOcean ($42) + Hostinger ($14)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Recurring floor</div>
+      <div class="kpi-value">$387<span style="font-size:22px; color:var(--ink-mute);">/mo</span></div>
+      <div class="kpi-foot">Typical month, recurring + usage baseline</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">60-day total</div>
+      <div class="kpi-value">$1.3<span style="font-size:22px; color:var(--ink-mute);">k</span></div>
+      <div class="kpi-foot"><span class="delta-up">↑ Anomaly +$382</span> · audit needed</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Active services</div>
+      <div class="kpi-value">23</div>
+      <div class="kpi-foot"><span style="color:var(--rose);">3 at risk</span> · 1 payment failed</div>
+    </div>
+  </div>
+
+  <!-- ====================== ALERTS / 7-DAY WINDOW ====================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Coming up <em>this week</em></div>
+      </div>
+      <div class="section-sub">May 1 → May 7 · 2026</div>
+    </div>
+    <div class="alerts">
+
+      <div class="alert">
+        <div class="alert-date">May 01<small>Friday</small></div>
+        <div class="alert-vendor">DigitalOcean<small>Legacy AI · Floyd's Labs droplet</small></div>
+        <div class="alert-note">Monthly auto-charge. April closed at the same amount. Maintenance window May 4 (no charge).</div>
+        <div class="alert-amount">$42.00</div>
+        <div class="alert-pill"><span class="badge badge-info">Auto</span></div>
+      </div>
+
+      <div class="alert">
+        <div class="alert-date">May 01<small>Friday</small></div>
+        <div class="alert-vendor">Mistral AI<small>API usage · monthly close</small></div>
+        <div class="alert-note">May invoice already opened at $0.00. April closed at $40 — first significant month of usage.</div>
+        <div class="alert-amount tbd">usage</div>
+        <div class="alert-pill"><span class="badge badge-info">Auto</span></div>
+      </div>
+
+      <div class="alert warn">
+        <div class="alert-date">May 02<small>Saturday</small></div>
+        <div class="alert-vendor">Hostinger<small>firstlightcx.com · domain renewal</small></div>
+        <div class="alert-note">Hostinger requested payment-method verification on Apr 25. Confirm card on file before this renews tomorrow.</div>
+        <div class="alert-amount tbd">verify</div>
+        <div class="alert-pill"><span class="badge badge-warn">Action</span></div>
+      </div>
+
+      <div class="alert warn">
+        <div class="alert-date">May 04<small>Monday</small></div>
+        <div class="alert-vendor">Anthropic<small>Claude Max · monthly</small></div>
+        <div class="alert-note">Confirmed by the welcome-to-Max email — "next charge May 4". Largest single line item of the month.</div>
+        <div class="alert-amount">$200.00</div>
+        <div class="alert-pill"><span class="badge badge-warn">Large</span></div>
+      </div>
+
+      <div class="alert">
+        <div class="alert-date">May 07<small>Thursday</small></div>
+        <div class="alert-vendor">Hostinger<small>Main hosting · monthly</small></div>
+        <div class="alert-note">Already flagged EXIT in main dashboard — Vercel absorbs hosting. This is the last cycle if you cut it now.</div>
+        <div class="alert-amount">$13.99</div>
+        <div class="alert-pill"><span class="badge badge-info">Auto</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ====================== TOP VENDORS / CHART ====================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Where the money <em>goes</em></div>
+      </div>
+      <div class="section-sub">60-day spend · top vendors</div>
+    </div>
+    <div class="two-col">
+
+      <div class="ledger">
+        <div class="ledger-row head">
+          <div>Vendor</div>
+          <div>Category</div>
+          <div>Cadence</div>
+          <div>Last charge</div>
+          <div style="text-align:right;">Amount</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Anthropic <small>Claude Max + API top-ups</small></div>
+          <div class="ledger-cell">AI</div>
+          <div class="ledger-cell">Monthly + ad-hoc</div>
+          <div class="ledger-cell">Apr 17 · top-up</div>
+          <div class="ledger-cell amount" style="text-align:right;">$507.58</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Anomaly <small>Multi-charge pattern · audit needed</small></div>
+          <div class="ledger-cell">AI</div>
+          <div class="ledger-cell">Multi-monthly</div>
+          <div class="ledger-cell">Apr 19</div>
+          <div class="ledger-cell amount" style="text-align:right;">$382.69</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">z.ai <small>GLM Coding Plan + usage</small></div>
+          <div class="ledger-cell">AI</div>
+          <div class="ledger-cell">Monthly + usage</div>
+          <div class="ledger-cell">Apr 30 · $0</div>
+          <div class="ledger-cell amount" style="text-align:right;">$70.50</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Hostinger <small>Hosting + domains</small></div>
+          <div class="ledger-cell">Hosting</div>
+          <div class="ledger-cell">Monthly</div>
+          <div class="ledger-cell">Apr 8</div>
+          <div class="ledger-cell amount" style="text-align:right;">$48.36</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Eleven Labs <small>Voice AI · Creator</small></div>
+          <div class="ledger-cell">AI</div>
+          <div class="ledger-cell">Monthly</div>
+          <div class="ledger-cell">Apr 29</div>
+          <div class="ledger-cell amount" style="text-align:right;">$44.00</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Supabase <small>Variable usage</small></div>
+          <div class="ledger-cell">Hosting</div>
+          <div class="ledger-cell">Monthly · usage</div>
+          <div class="ledger-cell">Apr 8</div>
+          <div class="ledger-cell amount" style="text-align:right;">$44.04</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">DigitalOcean <small>Legacy AI droplet</small></div>
+          <div class="ledger-cell">Hosting</div>
+          <div class="ledger-cell">Monthly</div>
+          <div class="ledger-cell">Apr 1</div>
+          <div class="ledger-cell amount" style="text-align:right;">$42.00</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Mistral AI <small>API usage · new this period</small></div>
+          <div class="ledger-cell">AI</div>
+          <div class="ledger-cell">Monthly · usage</div>
+          <div class="ledger-cell">Apr 29</div>
+          <div class="ledger-cell amount" style="text-align:right;">$40.00</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">ngrok <small>Tunneling</small></div>
+          <div class="ledger-cell">Dev</div>
+          <div class="ledger-cell">Monthly</div>
+          <div class="ledger-cell">Apr 24</div>
+          <div class="ledger-cell amount" style="text-align:right;">$40.00</div>
+        </div>
+        <div class="ledger-row body">
+          <div class="ledger-vendor">Vercel <small>Hosting + CDN</small></div>
+          <div class="ledger-cell">Hosting</div>
+          <div class="ledger-cell">Monthly</div>
+          <div class="ledger-cell">Apr 8</div>
+          <div class="ledger-cell amount" style="text-align:right;">$40.00</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Spend distribution</div>
+        <div class="chart-sub">Last 60 days · by vendor</div>
+
+        <div class="bar-row">
+          <span class="label">Anthropic</span>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;"></div></div>
+          <span class="amt">$508</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">Anomaly</span>
+          <div class="bar-track"><div class="bar-fill rose" style="width:75%;"></div></div>
+          <span class="amt">$383</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">z.ai</span>
+          <div class="bar-track"><div class="bar-fill gold" style="width:14%;"></div></div>
+          <span class="amt">$71</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">Hostinger</span>
+          <div class="bar-track"><div class="bar-fill slate" style="width:10%;"></div></div>
+          <span class="amt">$48</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">Eleven Labs</span>
+          <div class="bar-track"><div class="bar-fill sage" style="width:9%;"></div></div>
+          <span class="amt">$44</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">Supabase</span>
+          <div class="bar-track"><div class="bar-fill sage" style="width:9%;"></div></div>
+          <span class="amt">$44</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">DigitalOcean</span>
+          <div class="bar-track"><div class="bar-fill slate" style="width:8%;"></div></div>
+          <span class="amt">$42</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">Mistral AI</span>
+          <div class="bar-track"><div class="bar-fill" style="width:8%;"></div></div>
+          <span class="amt">$40</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">ngrok</span>
+          <div class="bar-track"><div class="bar-fill slate" style="width:8%;"></div></div>
+          <span class="amt">$40</span>
+        </div>
+        <div class="bar-row">
+          <span class="label">Vercel</span>
+          <div class="bar-track"><div class="bar-fill slate" style="width:8%;"></div></div>
+          <span class="amt">$40</span>
+        </div>
+
+        <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--line); font-size:12px; color:var(--ink-soft); line-height:1.5;">
+          AI services account for <strong style="color:var(--ink);">~78%</strong> of recent spend. Anthropic alone is ~39% of the 60-day total.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ====================== INSIGHTS ====================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Worth your <em>attention</em></div>
+      </div>
+      <div class="section-sub">Trends · risks · drift</div>
+    </div>
+    <div class="insights">
+
+      <div class="insight flag-risk">
+        <div class="insight-tag">↑ Trending up</div>
+        <div class="insight-title">Anomaly billing pattern looks duplicated</div>
+        <div class="insight-body">Multiple $52.62 charges fired within hours of each other on Mar 25–26. That's the #2 spend bucket overall — a single audit could save real money. Ask Anomaly support to confirm what each charge represents.</div>
+      </div>
+
+      <div class="insight flag-warn">
+        <div class="insight-tag">⚠ At risk</div>
+        <div class="insight-title">Hugging Face $100 charge failed</div>
+        <div class="insight-body">Stripe declined the card on Apr 27. Service may degrade or pause until a new payment method is on file. Already on the Apr 28 daily brief.</div>
+      </div>
+
+      <div class="insight flag-warn">
+        <div class="insight-tag">⚠ Disputed</div>
+        <div class="insight-title">z.ai annual PRO MAX still being billed daily</div>
+        <div class="insight-body">You prepaid for the year, but daily usage charges are still firing. Last support reply was Apr 7. Worth a follow-up — keep the receipts trail.</div>
+      </div>
+
+      <div class="insight flag-info">
+        <div class="insight-tag">→ Model shift</div>
+        <div class="insight-title">GitHub Copilot moves to usage-based</div>
+        <div class="insight-body">Per the Apr 27 email, the steady $4/mo line item becomes variable. Model and project usage will start mattering more — keep an eye on it next cycle.</div>
+      </div>
+
+      <div class="insight flag-info">
+        <div class="insight-tag">→ New line item</div>
+        <div class="insight-title">Mistral AI usage broke through this month</div>
+        <div class="insight-body">$0 in prior months → $40 in April. First real month of usage. Worth deciding now whether this is going to grow into a Top 5 vendor or stay small.</div>
+      </div>
+
+      <div class="insight flag-info">
+        <div class="insight-tag">→ Stale</div>
+        <div class="insight-title">Cursor hasn't been charged since February</div>
+        <div class="insight-body">The last Cursor charge was Feb 9 ($19.59). Either you cancelled or paused the subscription, or the billing system is stuck. Quick check on the account would resolve it.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ====================== ALTERNATIVES ====================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Possible <em>alternatives</em></div>
+      </div>
+      <div class="section-sub">Synced with the consolidation plan in the main map</div>
+    </div>
+    <div class="alts">
+
+      <div class="alt">
+        <div class="alt-current">Anthropic Claude Max <span style="color:var(--ink-mute); font-weight:400;">· $200/mo</span></div>
+        <div class="alt-arrow">→</div>
+        <div class="alt-target">API pay-as-you-go</div>
+        <div class="alt-rationale">If usage is predictable, the API is cheaper. If you're saturating Max regularly, keep it — it's already right-sized.</div>
+      </div>
+
+      <div class="alt">
+        <div class="alt-current">Docker Pro <span style="color:var(--ink-mute); font-weight:400;">· $11/mo</span></div>
+        <div class="alt-arrow">→</div>
+        <div class="alt-target">Docker CLI · free</div>
+        <div class="alt-rationale">Already flagged as EXIT in the main dashboard. The CLI covers everything you actually use.</div>
+      </div>
+
+      <div class="alt">
+        <div class="alt-current">ngrok <span style="color:var(--ink-mute); font-weight:400;">· $20/mo</span></div>
+        <div class="alt-arrow">→</div>
+        <div class="alt-target">Cloudflare Tunnel · Tailscale Funnel</div>
+        <div class="alt-rationale">Both are free and Tailscale is already part of your stack. Worth a one-day migration test.</div>
+      </div>
+
+      <div class="alt">
+        <div class="alt-current">Hostinger main hosting <span style="color:var(--ink-mute); font-weight:400;">· $14/mo</span></div>
+        <div class="alt-arrow">→</div>
+        <div class="alt-target">Vercel · already KEEP</div>
+        <div class="alt-rationale">Main map already flags EXIT. Vercel absorbs the hosting workload — this is just lingering.</div>
+      </div>
+
+      <div class="alt">
+        <div class="alt-current">Anomaly recurring <span style="color:var(--ink-mute); font-weight:400;">· $52+/cycle</span></div>
+        <div class="alt-arrow">→</div>
+        <div class="alt-target">Audit before optimizing</div>
+        <div class="alt-rationale">Root-cause the multi-charge pattern first. Don't cancel until you understand what's actually being billed.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ====================== FOOTER ====================== -->
+  <footer class="footer">
+    <div>Legacy AI · Spend Watch · live companion to the cartography map</div>
+    <div>Refreshed 3× daily · Apr 30, 2026 · 22:39 ET</div>
+  </footer>
+
+</div>
+</body>
+</html>

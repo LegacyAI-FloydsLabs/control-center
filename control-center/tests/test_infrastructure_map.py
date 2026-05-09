@@ -35,7 +35,9 @@ VENDORED_MAP = ROOT / "static" / "infrastructure-map.html"
 
 def test_vendored_file_exists() -> None:
     """The vendored map must be checked in alongside the project."""
-    assert VENDORED_MAP.is_file(), f"missing {VENDORED_MAP} — run scripts/refresh-infrastructure-map.sh"
+    assert VENDORED_MAP.is_file(), (
+        f"missing {VENDORED_MAP} — run scripts/refresh-infrastructure-map.sh"
+    )
 
 
 def test_vendored_file_size() -> None:
@@ -62,13 +64,13 @@ def test_map_contains_provider_anchors(client: TestClient) -> None:
         assert token in body, f"provider {token!r} missing from infrastructure map"
 
 
-def test_index_html_embeds_iframe(client: TestClient) -> None:
-    """The Embed tab in the ControlBoard must reference the static map URL."""
+def test_index_html_native_mount_present(client: TestClient) -> None:
+    """The System Map tab must have a native mount div instead of an iframe."""
     body = client.get("/").text
-    assert 'id="cb-infra-iframe"' in body
-    assert 'src="/static/infrastructure-map.html"' in body
-    # Tab label should be Infrastructure (not the original "Embed" placeholder)
-    assert ">Infrastructure<" in body
+    assert 'id="system-map-mount"' in body
+    assert "/static/infrastructure-map.html" in body
+    # Tab label should be System Map (Dashboard-native naming)
+    assert "System Map" in body
 
 
 def test_refresh_script_present() -> None:

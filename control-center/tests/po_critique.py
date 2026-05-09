@@ -15,7 +15,7 @@ import time
 import urllib.error
 import urllib.request
 
-BASE = "http://localhost:9527"
+BASE = "http://localhost:10527"
 
 
 def q(path):
@@ -115,9 +115,15 @@ def main() -> int:
     cases = [
         ({"name": "", "directory": "/tmp", "command": "bash"}, "empty name"),
         ({"name": "x" * 200, "directory": "/tmp", "command": "bash"}, "huge name"),
-        ({"name": "ok", "directory": "/etc/passwd", "command": "bash"}, "non-dir directory"),
+        (
+            {"name": "ok", "directory": "/etc/passwd", "command": "bash"},
+            "non-dir directory",
+        ),
         ({"name": "ok2", "directory": "/tmp", "command": ""}, "empty command"),
-        ({"name": "../etc", "directory": "/tmp", "command": "bash"}, "name with traversal"),
+        (
+            {"name": "../etc", "directory": "/tmp", "command": "bash"},
+            "name with traversal",
+        ),
     ]
     for body, label in cases:
         try:

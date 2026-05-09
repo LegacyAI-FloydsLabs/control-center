@@ -1,0 +1,15 @@
+{
+  "capability": "system-map",
+  "source_name": "Infrastructure Cartography",
+  "source_path": "vendored — static/infrastructure-map.html",
+  "copied_at": "2026-04-30",
+  "source_revision": "vendored snapshot",
+  "copied_scope": ["static/infrastructure-map.html"],
+  "status": "vendored static embed — refreshable via scripts/refresh-infrastructure-map.sh",
+  "dashboard_runtime": {
+    "route_prefix": "/",
+    "api_prefix": null,
+    "public_port": 10527
+  },
+  "original_preservation_check": "n/a — vendored static file"
+}

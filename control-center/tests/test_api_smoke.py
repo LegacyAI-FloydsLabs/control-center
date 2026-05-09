@@ -6,11 +6,9 @@ detection. They do not exercise the UI; for that see `test_workflows_ui.py`.
 
 from __future__ import annotations
 
-import time
 import uuid
 
 import httpx
-import pytest
 
 from _helpers import base_url, run_llm_do
 
@@ -52,7 +50,7 @@ def test_index_page_loads_and_references_xterm():
         r = c.get("/")
     assert r.status_code == 200
     body = r.text
-    assert "<title>Terminal Control Center</title>" in body
+    assert "<title>Floyd's Unified Command Kernel</title>" in body
     assert "xterm" in body.lower()
     assert "agent-list" in body  # sidebar mount point
 
@@ -65,7 +63,15 @@ def test_get_agents_returns_list_with_status_fields():
     assert isinstance(agents, list)
     for a in agents:
         # Every agent must carry these fields after the GET enrichment
-        for key in ("id", "name", "directory", "command", "status", "uptime", "restart_count"):
+        for key in (
+            "id",
+            "name",
+            "directory",
+            "command",
+            "status",
+            "uptime",
+            "restart_count",
+        ):
             assert key in a, f"agent missing field {key}: {a}"
         assert a["status"] in ("running", "stopped", "exited")
 
@@ -236,7 +242,9 @@ def test_llm_list_returns_known_floyd_agents():
     assert resp["ok"] is True
     names = {a["name"] for a in (resp.get("agents") or [])}
     # Must include at least one floyd agent
-    assert any(n.startswith("FLOYD-") for n in names), f"no floyd agents listed: {names}"
+    assert any(n.startswith("FLOYD-") for n in names), (
+        f"no floyd agents listed: {names}"
+    )
 
 
 def test_llm_unknown_agent_returns_helpful_404():

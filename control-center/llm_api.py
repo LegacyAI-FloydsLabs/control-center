@@ -1,4 +1,4 @@
-"""LLM-First API for Terminal Control Center.
+"""LLM-First API for Floyd's Unified Command Kernel.
 
 Single endpoint, progressive disclosure design.
 Small models use required fields only. Capable models add optional fields.
@@ -6,7 +6,6 @@ Small models use required fields only. Capable models add optional fields.
 
 import asyncio
 import os
-import re
 import time
 from typing import Optional, List
 
@@ -97,9 +96,11 @@ class DoResponse(BaseModel):
 # These get populated at import time by server.py's module scope
 # We import them lazily to avoid circular imports
 
+
 def _get_server_state():
     """Lazy import of server module state."""
     import server
+
     return server
 
 
@@ -126,7 +127,11 @@ def _resolve_agent(name: str) -> tuple[str, dict]:
     if matches:
         suggestion = f"Did you mean: {', '.join(matches)}?"
     else:
-        suggestion = f"Available agents: {', '.join(available)}" if available else "No agents configured."
+        suggestion = (
+            f"Available agents: {', '.join(available)}"
+            if available
+            else "No agents configured."
+        )
 
     raise HTTPException(
         status_code=404,
@@ -210,7 +215,15 @@ async def do_action(req: DoRequest) -> DoResponse:
             ok=False,
             hint=f"Unknown action '{action}'. Use one of the available actions.",
             error_message=f"Action '{action}' is not recognized. Valid actions: list, read, run, stop, start, cancel, answer",
-            actions_available=["list", "read", "run", "stop", "start", "cancel", "answer"],
+            actions_available=[
+                "list",
+                "read",
+                "run",
+                "stop",
+                "start",
+                "cancel",
+                "answer",
+            ],
         )
 
 
@@ -241,12 +254,14 @@ async def _action_list(req: DoRequest) -> DoResponse:
         # Truncate last_output for summary
         last_output = last_line.strip()[-80:] if last_line.strip() else "(no output)"
 
-        summaries.append(AgentSummary(
-            name=agent.get("name", aid),
-            status=state,
-            hint=generate_hint(state, agent.get("name", "")),
-            last_output=last_output,
-        ))
+        summaries.append(
+            AgentSummary(
+                name=agent.get("name", aid),
+                status=state,
+                hint=generate_hint(state, agent.get("name", "")),
+                last_output=last_output,
+            )
+        )
 
     # Build readable text output
     lines = []
@@ -299,7 +314,11 @@ async def _action_read(req: DoRequest) -> DoResponse:
     if req.include_advanced and handle:
         response.advanced = AdvancedBlock(
             scrollback_bytes=len(handle.scrollback),
-            output_lines_total=len(handle.get_raw_scrollback().decode("utf-8", errors="replace").split("\n")),
+            output_lines_total=len(
+                handle.get_raw_scrollback()
+                .decode("utf-8", errors="replace")
+                .split("\n")
+            ),
             process_pid=handle.process.pid if handle.alive else None,
             uptime_seconds=time.time() - handle.started_at,
         )
@@ -569,7 +588,8 @@ async def _action_cancel(req: DoRequest) -> DoResponse:
         ok=True,
         output="Interrupt sent (Ctrl+C).",
         status=state,
-        hint=f"Sent cancel to '{req.agent}'. " + generate_hint(state, agent.get("name", ""), last_line),
+        hint=f"Sent cancel to '{req.agent}'. "
+        + generate_hint(state, agent.get("name", ""), last_line),
         actions_available=["run", "read", "stop", "list"],
     )
 

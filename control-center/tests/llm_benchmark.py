@@ -4,12 +4,11 @@ Sends tool-use prompts to a local Ollama model and checks if it
 generates correct tool calls for the /api/llm/do endpoint.
 """
 
-import json
 import time
 import requests
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
-TCC_URL = "http://localhost:9527/api/llm/do"
+TCC_URL = "http://localhost:10527/api/llm/do"
 MODEL = "qwen2.5:3b"
 
 # The tool definition a small model would receive
@@ -25,7 +24,15 @@ TCC_TOOL = {
                 "action": {
                     "type": "string",
                     "description": "What to do. One of: list, read, run, stop, start, cancel, answer",
-                    "enum": ["list", "read", "run", "stop", "start", "cancel", "answer"],
+                    "enum": [
+                        "list",
+                        "read",
+                        "run",
+                        "stop",
+                        "start",
+                        "cancel",
+                        "answer",
+                    ],
                 },
                 "agent": {
                     "type": "string",
@@ -163,7 +170,10 @@ def evaluate_test(test: dict, result: dict) -> dict:
         return {"pass": False, "reason": f"Error: {result['error']}"}
 
     if result["name"] is None:
-        return {"pass": False, "reason": f"No tool call. Model said: {result.get('text', '')[:100]}"}
+        return {
+            "pass": False,
+            "reason": f"No tool call. Model said: {result.get('text', '')[:100]}",
+        }
 
     if result["name"] != "terminal_control":
         return {"pass": False, "reason": f"Wrong tool: {result['name']}"}
@@ -175,47 +185,61 @@ def evaluate_test(test: dict, result: dict) -> dict:
 
     # Check action
     if action != test["expect_action"]:
-        return {"pass": False, "reason": f"Expected action '{test['expect_action']}', got '{action}'"}
+        return {
+            "pass": False,
+            "reason": f"Expected action '{test['expect_action']}', got '{action}'",
+        }
 
     # Check agent (if expected)
     if test.get("expect_agent"):
         if not agent or test["expect_agent"].lower() not in agent.lower():
-            return {"pass": False, "reason": f"Expected agent containing '{test['expect_agent']}', got '{agent}'"}
+            return {
+                "pass": False,
+                "reason": f"Expected agent containing '{test['expect_agent']}', got '{agent}'",
+            }
 
     # Check input contains (if expected)
     if test.get("expect_input_contains"):
-        if not input_val or test["expect_input_contains"].lower() not in input_val.lower():
-            return {"pass": False, "reason": f"Expected input containing '{test['expect_input_contains']}', got '{input_val}'"}
+        if (
+            not input_val
+            or test["expect_input_contains"].lower() not in input_val.lower()
+        ):
+            return {
+                "pass": False,
+                "reason": f"Expected input containing '{test['expect_input_contains']}', got '{input_val}'",
+            }
 
     return {"pass": True, "reason": "Correct"}
 
 
 def run_benchmark():
     """Run all tests and report results."""
-    print(f"=" * 70)
+    print("=" * 70)
     print(f"  LLM-FIRST API BENCHMARK — Model: {MODEL}")
-    print(f"  Testing: Can a 3B model correctly call POST /api/llm/do?")
-    print(f"=" * 70)
+    print("  Testing: Can a 3B model correctly call POST /api/llm/do?")
+    print("=" * 70)
     print()
 
     results = []
     total_time = 0
 
     for i, test in enumerate(TESTS):
-        print(f"  [{i+1}/{len(TESTS)}] {test['name']}")
-        print(f"       Prompt: \"{test['prompt']}\"")
+        print(f"  [{i + 1}/{len(TESTS)}] {test['name']}")
+        print(f'       Prompt: "{test["prompt"]}"')
 
         start = time.time()
         result = call_ollama(test["prompt"])
         elapsed = time.time() - start
         total_time += elapsed
 
-        eval_result = evaluate_test(test, result)
+        eval_result = evaluate_test(test, result or {})
         results.append({**test, "result": result, "eval": eval_result, "time": elapsed})
 
         status = "PASS" if eval_result["pass"] else "FAIL"
         args = result.get("arguments", {}) if result else {}
-        print(f"       Model called: action={args.get('action', 'N/A')}, agent={args.get('agent', 'N/A')}, input={args.get('input', 'N/A')}")
+        print(
+            f"       Model called: action={args.get('action', 'N/A')}, agent={args.get('agent', 'N/A')}, input={args.get('input', 'N/A')}"
+        )
         print(f"       [{status}] {eval_result['reason']} ({elapsed:.1f}s)")
         print()
 
@@ -224,11 +248,11 @@ def run_benchmark():
     failed = len(results) - passed
     pct = (passed / len(results)) * 100
 
-    print(f"=" * 70)
+    print("=" * 70)
     print(f"  RESULTS: {passed}/{len(results)} passed ({pct:.0f}%)")
     print(f"  Total time: {total_time:.1f}s")
-    print(f"  Avg per call: {total_time/len(results):.1f}s")
-    print(f"=" * 70)
+    print(f"  Avg per call: {total_time / len(results):.1f}s")
+    print("=" * 70)
     print()
 
     if failed > 0:
@@ -242,9 +266,13 @@ def run_benchmark():
     if pct >= 90:
         print("  VERDICT: PASS — Interface is small-model friendly.")
     elif pct >= 70:
-        print("  VERDICT: MARGINAL — Most scenarios work, some may need simplification.")
+        print(
+            "  VERDICT: MARGINAL — Most scenarios work, some may need simplification."
+        )
     else:
-        print("  VERDICT: FAIL — Interface needs redesign for small model accessibility.")
+        print(
+            "  VERDICT: FAIL — Interface needs redesign for small model accessibility."
+        )
 
     return results
 
