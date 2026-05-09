@@ -1,6 +1,6 @@
 # Floyd's Unified Command Kernel
 
-![Floyd's Unified Command Kernel](FloydsUnifiedCommandKernal.jpeg)
+![Floyd's Unified Command Kernel](FloydsUnifiedCommandKernel.jpeg)
 
 *One command surface. Every Legacy AI capability wired into it. Built in a garage because the existing options annoyed us.*
 
