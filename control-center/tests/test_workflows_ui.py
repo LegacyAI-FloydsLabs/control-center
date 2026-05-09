@@ -293,84 +293,63 @@ def test_workflow_2_add_use_delete_agent(page: Page, artifacts_dir):
             pass
 
 
-# ---- Workflow 3: Bounce two floyd terminals, layout, broadcast --------------
+# ---- Workflow 3: Two terminal panes remain isolated -------------------------
 
 
-def test_workflow_3_bounce_layout_broadcast(page: Page, artifacts_dir):
-    """Stuck terminals → restart → side-by-side layout → broadcast a key.
+def test_workflow_3_two_terminal_input_isolation(page: Page, artifacts_dir):
+    """Two visible terminals must not share keystrokes.
 
-    Steps (16):
+    Steps (14):
       1. Open TCC
       2. Wait for sidebar
       3. Identify two pinned floyd agents (FLOYD-STABILITY + one other)
-      4. Open the layout selector
-      5. Mouse-select "2x1"
-      6. Verify grid layout class applied
-      7. Click restart ↻ on FLOYD-STABILITY frame
-      8. Wait for the green dot to come back
-      9. Click restart ↻ on the second floyd frame
+      4. Select the 2x1 layout
+      5. Verify grid layout class applied
+      6. Verify no global broadcast control is present
+      7. Restart FLOYD-STABILITY
+      8. Wait for its green dot to come back
+      9. Restart the second floyd frame
       10. Wait for its green dot to come back
-      11. Click broadcast 📡 toggle
-      12. Verify the broadcast indicator becomes visible
-      13. Click into FLOYD-STABILITY terminal to focus
-      14. Type one character "z"
-      15. Verify the character appears in BOTH frames' buffers
-      16. Click broadcast toggle off; verify indicator hidden
+      11. Snapshot both per-agent WebSocket send counters
+      12. Focus FLOYD-STABILITY terminal
+      13. Type five characters
+      14. Verify only the focused terminal's WebSocket send counter advanced
     """
-    # Steps 1–2
     _open_tcc(page)
 
-    # Step 3
     floyds = [a for a in list_agents() if "floyd" in (a.get("tags") or [])]
     if len(floyds) < 2:
-        pytest.skip("need at least 2 floyd agents for broadcast test")
+        pytest.skip("need at least 2 floyd agents for isolation test")
     primary = next((a for a in floyds if a["name"] == "FLOYD-STABILITY"), floyds[0])
     secondary = next((a for a in floyds if a["id"] != primary["id"]), floyds[1])
     pid = primary["id"]
     sid = secondary["id"]
 
-    # Step 4–5: layout selector to 2x1
     page.locator("#layout-select").select_option("2x1")
-
-    # Step 6: grid container has the layout class
     expect(page.locator("#grid-container.layout-2x1")).to_be_visible(timeout=2_000)
+    expect(page.locator("#broadcast-toggle")).to_have_count(0)
 
-    # Step 7–8: restart primary
     page.wait_for_selector(f"#frame-{pid}", state="visible", timeout=10_000)
     page.locator(f"#frame-{pid}").hover()
     page.locator(f"#frame-{pid} [data-action='restart']").click()
     page.wait_for_selector(f"#dot-{pid}.connected", state="attached", timeout=20_000)
 
-    # Step 9–10: restart secondary
     page.wait_for_selector(f"#frame-{sid}", state="visible", timeout=10_000)
     page.locator(f"#frame-{sid}").hover()
     page.locator(f"#frame-{sid} [data-action='restart']").click()
     page.wait_for_selector(f"#dot-{sid}.connected", state="attached", timeout=20_000)
 
-    # Step 11–12: enable broadcast
-    page.locator("#broadcast-toggle").click()
-    expect(page.locator("#broadcast-indicator.active")).to_be_visible(timeout=2_000)
-
-    # Step 13–14: focus primary terminal, type characters
     _focus_terminal(page, pid)
-    # Wait briefly for both WSs to be fully ready
     time.sleep(1.0)
 
-    # Snapshot pre-broadcast bytes + visible buffer for both agents.
     pre_p = page.evaluate("(id) => window.tccGetWSStats(id)", pid)
     pre_s = page.evaluate("(id) => window.tccGetWSStats(id)", sid)
     assert pre_p and pre_s and pre_p["wsState"] == 1 and pre_s["wsState"] == 1, (
-        f"WSs must be open before broadcast test — primary={pre_p}, secondary={pre_s}"
+        f"WSs must be open before isolation test — primary={pre_p}, secondary={pre_s}"
     )
-    pre_p_buffer = _read_xterm_buffer(page, pid)
-    pre_s_buffer = _read_xterm_buffer(page, sid)
 
-    # User types 5 chars in broadcast mode — every keystroke must reach BOTH WSs
     page.keyboard.type("zzzzz", delay=30)
 
-    # Step 15: deterministic verification — bytes counter on each WS must have
-    # advanced by at least 5. This is what the user's broadcast workflow guarantees,
-    # independent of how each floyd TUI renders the bytes on screen.
     deadline = time.time() + 5
     delta_p = delta_s = 0
     while time.time() < deadline:
@@ -378,33 +357,11 @@ def test_workflow_3_bounce_layout_broadcast(page: Page, artifacts_dir):
         post_s = page.evaluate("(id) => window.tccGetWSStats(id)", sid)
         delta_p = post_p["sentBytes"] - pre_p["sentBytes"]
         delta_s = post_s["sentBytes"] - pre_s["sentBytes"]
-        if delta_p >= 5 and delta_s >= 5:
+        if delta_p >= 5 and delta_s == 0:
             break
         time.sleep(0.2)
-    assert delta_p >= 5 and delta_s >= 5, (
-        f"broadcast did not reach both WSs — primary delta={delta_p}, secondary delta={delta_s}"
-    )
+    assert delta_p >= 5, f"focused terminal did not receive typed input — primary delta={delta_p}"
+    assert delta_s == 0, f"unfocused terminal received leaked input — secondary delta={delta_s}"
 
-    # Bonus UX check: at least one terminal must visibly redraw in response to
-    # the broadcast keystrokes. We don't assert the literal 'z' appears — TUIs
-    # may consume keystrokes without echoing them. The byte counter above already
-    # proved data delivery; this just asserts the user sees *something* change.
-    deadline = time.time() + 3
-    primary_redrew = secondary_redrew = False
-    while time.time() < deadline:
-        primary_redrew = primary_redrew or (_read_xterm_buffer(page, pid) != pre_p_buffer)
-        secondary_redrew = secondary_redrew or (_read_xterm_buffer(page, sid) != pre_s_buffer)
-        if primary_redrew or secondary_redrew:
-            break
-        time.sleep(0.15)
-    assert primary_redrew or secondary_redrew, (
-        "neither terminal redrew after broadcast keystrokes — both look frozen to the user"
-    )
-
-    # Send Ctrl+C to both to clear stray input before disabling broadcast
     page.keyboard.press("Control+c")
     time.sleep(0.3)
-
-    # Step 16: disable broadcast
-    page.locator("#broadcast-toggle").click()
-    expect(page.locator("#broadcast-indicator.active")).to_be_hidden(timeout=2_000)

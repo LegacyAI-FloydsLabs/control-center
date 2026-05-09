@@ -2669,24 +2669,6 @@
               ☰
             </button>
           </div>
-          <div
-            style="
-              border-left: 1px solid var(--border);
-              height: 18px;
-              margin: 0 4px;
-            "
-          ></div>
-          <button
-            class="btn btn-sm"
-            id="broadcast-toggle"
-            title="Broadcast mode (type in one, send to all)"
-          >
-            📡 Broadcast
-          </button>
-          <span
-            id="broadcast-count"
-            style="font-size: 0.7rem; opacity: 0.5; display: none"
-          ></span>
           <button
             class="btn-icon"
             id="cmd-palette-btn"
@@ -3105,7 +3087,7 @@
           return out;
         };
         // Test helper: per-agent WebSocket send-byte counter.
-        // Used to verify broadcast actually delivered bytes to all open WSs.
+        // Used by tests to prove keystrokes are delivered only to the focused terminal WS.
         window.tccGetWSStats = function (agentId) {
           const state = agents.get(agentId);
           if (!state) return null;
@@ -3119,7 +3101,6 @@
         let activeTabId = null;
         let serverOnline = true;
         let fullscreenId = null;
-        let broadcastMode = false;
         let multiSelectMode = false;
         const selectedAgents = new Set();
         let activeTagFilter = null;
@@ -3585,35 +3566,6 @@
             `${selectedAgents.size} selected`;
         }
 
-        // ---- Broadcast mode ----
-        function initBroadcast() {
-          document
-            .getElementById("broadcast-toggle")
-            .addEventListener("click", () => {
-              broadcastMode = !broadcastMode;
-              document
-                .getElementById("broadcast-toggle")
-                .classList.toggle("btn-accent", broadcastMode);
-              document
-                .getElementById("broadcast-indicator")
-                .classList.toggle("active", broadcastMode);
-              const countEl = document.getElementById("broadcast-count");
-              if (broadcastMode) {
-                const connected = [...agents.values()].filter(
-                  (s) => s.status === "connected",
-                ).length;
-                countEl.textContent = `${connected} agent${connected !== 1 ? "s" : ""}`;
-                countEl.style.display = "";
-                toast(
-                  `Broadcast ON — input to ${connected} terminal${connected !== 1 ? "s" : ""}`,
-                  "info",
-                );
-              } else {
-                countEl.style.display = "none";
-                toast("Broadcast mode OFF", "info");
-              }
-            });
-        }
 
         // ---- Import / Export ----
         function initImportExport() {
@@ -3875,19 +3827,12 @@
           });
           resizeObserver.observe(frame);
 
-          // Input -> WS (with broadcast support)
+          // Input -> this frame's WS only. Terminal panes must be isolated:
+          // typing in one terminal must never mutate another terminal unless a
+          // future explicit multi-target command path is added with its own UI.
           term.onData((data) => {
-            if (broadcastMode) {
-              // Send to all connected agents
-              agents.forEach((s) => {
-                if (s.ws && s.ws.readyState === WebSocket.OPEN) {
-                  s.ws.send(data);
-                }
-              });
-            } else {
-              if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                state.ws.send(data);
-              }
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+              state.ws.send(data);
             }
           });
 
@@ -4500,13 +4445,6 @@
                 confirm: false,
               },
               {
-                label: "Toggle Broadcast Mode",
-                cat: "Terminal",
-                action: () =>
-                  document.getElementById("broadcast-toggle").click(),
-                confirm: false,
-              },
-              {
                 label: "Grid View",
                 cat: "View",
                 action: () => {
@@ -5103,7 +5041,6 @@
           initSidebar();
           initViewToggle();
           initLayout();
-          initBroadcast();
           initMultiSelect();
           initImportExport();
           initPresets();
