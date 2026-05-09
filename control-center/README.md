@@ -1,57 +1,104 @@
 # Floyd's Unified Command Kernel
 
+## Or: One App To Rule The Garage
+
+**DOCUMENT CLASSIFICATION:** README / Anti-Corporate
+**DATE RECORDED:** 2026-05-09 — Probably Past Bedtime
+**LOCATION:** The Garage, Brown County, Indiana
+**BEVERAGE:** Coffee that tastes like a lawnmower's opinion
+**CURRENT STATE:** Caffeinated
+
+---
+
 One command surface. Every Legacy AI capability wired into it. Built in a garage because the existing options annoyed us.
 
-The authoritative plan, architecture rules, beta gates, and remaining work live in:
+Floyd's Unified Command Kernel — F.U.C.K. for short, because we name things the way we want to — is not a shell. It's not a launcher. It's not a collection of iframes wearing a trench coat and pretending to be integrated.
 
-```text
-SSOT/control-center_SSOT.md
-```
+It is **one application**. Terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — all copied in, all adapted, all owned by the Kernel. The originals stay standalone and untouched because that's how reuse actually works.
 
-Read that SSOT before making product, route, port, module, or documentation changes. Seriously. Read it. We'll know if you didn't.
+---
 
-## What This Thing Is
+## What You're Looking At
 
-Floyd's Unified Command Kernel (the Kernel, for short) is one application. Not a shell, not a launcher, not a collection of iframes wearing a trench coat and pretending to be integrated.
+- **Backend:** FastAPI (Python 3.14)
+- **Frontend:** Zero-build vanilla JavaScript — no bundler, no npm install, no three-hour webpack config that breaks on Tuesdays
+- **Port:** 10527
+- **Tests:** 195 of them, and they all pass
+- **Tabs:** 11 nav surfaces covering the full Legacy AI stack
 
-Every capability — terminals, workspace editing, agent execution, system health, infrastructure mapping, project governance — gets copied into this monorepo and adapted as a Kernel-owned internal module. The originals stay standalone and untouched. Iframes and adapters are temporary scaffolding, not finished work.
+---
 
-## Current State
-
-- Product: Floyd's Unified Command Kernel
-- Runtime posture: single-user localhost during beta construction
-- Primary app port: `10527`
-- Backend: FastAPI (Python)
-- Frontend: zero-build vanilla JavaScript
-- Phase: Mid-construction toward beta release
-
-## Run Locally
+## Get It Running
 
 ```bash
 make venv
 make run
 ```
 
-Then open:
+Then open `http://localhost:10527/`. That's it. No Docker, no Kubernetes manifest, no YAML file written by someone who describes themselves as a "cloud evangelist."
 
-```text
-http://localhost:10527/
-```
+---
 
-## Verify
+## Make Sure It Works
 
 ```bash
 .venv/bin/python -m pytest -v
 ```
 
-112 tests should pass. Three workflow tests need Playwright browsers installed — run `.venv/bin/playwright install` if you want those too.
+195 tests should pass. A few workflow tests want Playwright browsers — run `.venv/bin/playwright install` if you care about those.
 
-## Architecture Rules
+---
 
-1. The Kernel is one product. Old app names are provenance, not product labels.
-2. Source apps get copied in, then adapted. Not rewritten from memory.
-3. Original source apps remain standalone. Don't mutate them.
-4. Iframes are temporary bridges. They are not finished integration.
-5. All user-facing names, routes, and ports are Kernel-native.
+## The 11 Tabs
 
-For beta readiness gates, see the gate table in `SSOT/control-center_SSOT.md`.
+| Tab | What It Does |
+|---|---|
+| Project Control | Governance dashboard — scan projects, quarantine garbage, tag things |
+| Terminal Console | Real PTY over WebSocket, xterm.js rendering |
+| Dual Console | Two terminals, because one is never enough |
+| Workspace | File browser for your filesystem |
+| Workspace Editor | MWIDE-based code editor, injected directly into the DOM |
+| System Health | What's broken and why |
+| System Map | Infrastructure cartography in a Shadow DOM |
+| Agent Execution | ATerm-powered agent terminals with PTY lifecycle |
+| Dev Launcher | Launch development tools (iframe, because it's a self-contained Vite SPA) |
+| Spend Watch | Track where the money goes |
+| Mac Cleanup | System cleanup reports |
+
+---
+
+## Architecture Rules We Actually Follow
+
+1. **The Kernel is one product.** Old app names are provenance, not product labels.
+2. **Source apps get copied in, then adapted.** Not rewritten from memory like a bad book report.
+3. **Original source apps stay untouched.** They're standalone products.
+4. **Iframes are for self-contained SPAs only.** Everything else gets direct DOM injection.
+5. **All routes, ports, and names are Kernel-native.** No legacy cruft in the URL bar.
+
+---
+
+## The Docs
+
+| Document | Purpose |
+|---|---|
+| `SSOT/control-center_SSOT.md` | The source of truth — read this before changing anything |
+| `docs/FEATURES.md` | Every feature, active and dormant, with technical detail |
+| `CHANGELOG.md` | What shipped and when |
+| `docs/RELEASE.md` | Release manifest |
+
+---
+
+## The Name
+
+Yes, the acronym is intentional. Floyd's Labs is a garage in Brown County. We answer to cats, not shareholders. Bella handles QA. Bowser monitors the router. Neither of them has ever said "let's circle back on the naming convention."
+
+---
+
+┌──────────────────────────────────────────────────────────┐
+│  DOCUMENT METADATA                                        │
+├──────────────────────────────────────────────────────────┤
+│  Classification:   README                                  │
+│  Cat Supervision:  Bella (QA) and Bowser (Networking)     │
+│  Lines of Code:    11,599 Python + whole lotta TypeScript │
+│  Corporate Feelings: HURT (intended)                       │
+└──────────────────────────────────────────────────────────┘
