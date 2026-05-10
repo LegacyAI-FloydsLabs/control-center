@@ -102,13 +102,11 @@ Both of them were asleep on the desk when 195 tests went green. Neither of them 
 
 ---
 
-┌──────────────────────────────────────────────────────────┐
-│  BUILT IN A GARAGE, NOT A BOARDROOM                       │
-├──────────────────────────────────────────────────────────┤
-│  Location:    Brown County, Indiana                       │
-│  Funding:     $0 and a dream                              │
-│  Meetings:    None that weren't with cats                 │
-│  Standups:    Bella sat on the keyboard. That counts.     │
-│  Coffee:      Motor oil adjacent                          │
-│  Ship Status: 195 tests green. We sleep eventually.       │
-└──────────────────────────────────────────────────────────┘
+BUILT IN A GARAGE, NOT A BOARDROOM 
+
+Location:    Brown County, Indiana                      
+Funding:     $0 and a dream                             
+Meetings:    None that weren't with cats                
+Standups:    Bella sat on the keyboard. That counts.    
+Coffee:      Motor oil adjacent                         
+Ship Status: 195 tests green. We sleep eventually. 
