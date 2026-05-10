@@ -1069,6 +1069,14 @@ from pathlib import Path as _PathLibWE
 
 # --- FS bridge: path allow/deny lists (mirrors MWIDE governance) ---
 _WE_DENY_ROOTS = ["/Volumes/T7", "/private/var/db", "/System"]
+# Paths in _WE_ALLOWED_ROOTS are whitelisted for read/list/write, but we block
+# deleting the root of an allowed tree (e.g. /Volumes/Storage itself) to prevent
+# catastrophic accidents. Subdirectories remain deletable.
+_WE_DELETE_SENTINEL_ROOTS = [
+    str(_PathLibWE.home()),
+    "/Volumes/SanDisk1Tb",
+    "/Volumes/Storage",
+]
 _WE_ALLOWED_ROOTS = [
     str(_PathLibWE.home()),
     os.getcwd(),
@@ -1273,6 +1281,14 @@ async def we_fs_remove(path: str = "") -> dict:
     if not path:
         raise HTTPException(status_code=400, detail="path required")
     _we_assert_allowed(path)
+    # Block deletion of the critical root directories themselves
+    resolved = str(_PathLibWE(path).resolve())
+    for sentinel in _WE_DELETE_SENTINEL_ROOTS:
+        if resolved == sentinel or resolved.startswith(sentinel + "/"):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Cannot delete root of allowed path tree: {sentinel}",
+            )
     if os.path.isdir(path):
         _shutil.rmtree(path)
     else:
@@ -3012,21 +3028,20 @@ async def agent_launchd_status(agent_id: str):
 # Dev Launcher API proxy (forward to port 4500 backend)
 # ---------------------------------------------------------------------------
 
-_DEV_LAUNCHER_PORT = 4500
+_DEV_LAUNCHER_PORT = int(os.environ.get("DEV_LAUNCHER_PORT", "4500"))
 _DEV_LAUNCHER_ROUTES = {
     "/api/apps",
     "/api/browse",
     "/api/discover",
-    "/api/import",
+    "/api/dev-launcher/import",
     "/api/cleanup",
     "/api/config/refresh",
 }
 
 
 async def _proxy_dev_launcher(path: str, request: Request) -> Response:
-    """Forward Dev Launcher API calls to its backend on port 4500."""
-    import urllib.request
-    import urllib.error
+    """Forward Dev Launcher API calls to its backend."""
+    import httpx as _httpx
 
     target = f"http://127.0.0.1:{_DEV_LAUNCHER_PORT}{path}"
     body = await request.body()
@@ -3034,25 +3049,36 @@ async def _proxy_dev_launcher(path: str, request: Request) -> Response:
         "Content-Type": request.headers.get("content-type", "application/json"),
         "Accept": "application/json",
     }
-    req = urllib.request.Request(target, data=body or None, headers=headers)
-    if request.method == "POST":
-        req.method = "POST"
-    elif request.method == "PUT":
-        req.method = "PUT"
-    elif request.method == "DELETE":
-        req.method = "DELETE"
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = resp.read()
-            return Response(
-                content=data,
-                status_code=resp.status,
-                media_type=resp.headers.get("Content-Type", "application/json"),
-            )
-    except urllib.error.HTTPError as e:
+        async with _httpx.AsyncClient(timeout=15.0) as client:
+            try:
+                httpx_response = await client.request(
+                    method=request.method,
+                    url=target,
+                    content=body or None,
+                    headers=headers,
+                )
+                return Response(
+                    content=httpx_response.content,
+                    status_code=httpx_response.status_code,
+                    media_type=httpx_response.headers.get("Content-Type", "application/json"),
+                )
+            except _httpx.HTTPStatusError as e:
+                return Response(
+                    content=e.response.content,
+                    status_code=e.response.status_code,
+                    media_type="application/json",
+                )
+    except _httpx.ConnectError:
         return Response(
-            content=e.read(),
-            status_code=e.code,
+            content=json.dumps({"error": "Dev Launcher backend unavailable", "port": _DEV_LAUNCHER_PORT}),
+            status_code=503,
+            media_type="application/json",
+        )
+    except _httpx.TimeoutException:
+        return Response(
+            content=json.dumps({"error": "Dev Launcher backend timed out"}),
+            status_code=504,
             media_type="application/json",
         )
     except Exception as e:
@@ -3083,9 +3109,9 @@ async def proxy_discover(request: Request):
     return await _proxy_dev_launcher("/api/discover", request)
 
 
-@app.api_route("/api/import", methods=["GET", "POST"])
-async def proxy_import(request: Request):
-    return await _proxy_dev_launcher("/api/import", request)
+@app.api_route("/api/dev-launcher/import", methods=["GET", "POST"])
+async def proxy_dev_launcher_import(request: Request):
+    return await _proxy_dev_launcher("/api/dev-launcher/import", request)
 
 
 @app.api_route("/api/cleanup", methods=["GET", "POST"])
@@ -3599,15 +3625,20 @@ async def project_bootstrap(name: str) -> dict:
     prompt_file = os.path.join(project_dir, "PROMPT.md")
     makefile = os.path.join(project_dir, "Makefile")
 
-    commands = []
-    if os.path.isfile(bootstrap_script):
-        commands.append(f"bash {bootstrap_script}")
+    # Resolve script path to absolute before building argv list
+    bootstrap_script_abs = os.path.abspath(bootstrap_script)
+    prompt_file_abs = os.path.abspath(prompt_file)
+
+    argv: list[str] = []
+    if os.path.isfile(bootstrap_script_abs):
+        argv = ["bash", bootstrap_script_abs]
     elif os.path.isfile(makefile):
-        commands.append(
-            f"cd '{project_dir}' && make bootstrap 2>&1 || make verify 2>&1 || make test 2>&1"
-        )
-    elif os.path.isfile(prompt_file):
-        commands.append(f"cd '{project_dir}' && cat PROMPT.md")
+        argv = [
+            "make",
+            "bootstrap",
+        ]
+    elif os.path.isfile(prompt_file_abs):
+        argv = ["cat", prompt_file_abs]
     else:
         return {
             "ok": False,
@@ -3616,12 +3647,11 @@ async def project_bootstrap(name: str) -> dict:
             "path": project_dir,
         }
 
+
     # Fire-and-forget execution
     try:
-        cmd = commands[0]
         proc = _subprocess_we.Popen(
-            cmd,
-            shell=True,
+            argv,
             cwd=project_dir,
             stdout=_subprocess_we.PIPE,
             stderr=_subprocess_we.STDOUT,
@@ -3634,7 +3664,7 @@ async def project_bootstrap(name: str) -> dict:
                 "ok": proc.returncode == 0,
                 "project": name,
                 "path": project_dir,
-                "command": cmd,
+                "command": argv,
                 "output": output,
                 "returncode": proc.returncode,
             }
@@ -3643,7 +3673,7 @@ async def project_bootstrap(name: str) -> dict:
                 "ok": True,
                 "project": name,
                 "path": project_dir,
-                "command": cmd,
+                "command": argv,
                 "output": "Bootstrap started (still running)...",
                 "pid": proc.pid,
             }
@@ -3660,26 +3690,24 @@ async def project_finisher(name: str) -> dict:
 
     # Determine what to run
     makefile = os.path.join(project_dir, "Makefile")
-    commands = []
+    argv_list: list[list[str]] = []
     if os.path.isfile(makefile):
         # Try verify, then test, then lint
         for target in ["verify", "test", "lint"]:
-            # Check if target exists in Makefile
             try:
                 with open(makefile) as f:
                     if f"{target}:" in f.read():
-                        commands.append(f"make {target}")
+                        argv_list.append(["make", target])
             except Exception:
                 pass
-    if not commands:
-        commands.append("echo 'No finisher targets found'")
+    if not argv_list:
+        argv_list.append(["echo", "No finisher targets found"])
 
     results = []
-    for cmd in commands:
+    for argv in argv_list:
         try:
             proc = _subprocess_we.run(
-                cmd,
-                shell=True,
+                argv,
                 cwd=project_dir,
                 capture_output=True,
                 text=True,
@@ -3687,13 +3715,13 @@ async def project_finisher(name: str) -> dict:
             )
             results.append(
                 {
-                    "command": cmd,
+                    "command": argv,
                     "returncode": proc.returncode,
                     "output": (proc.stdout + proc.stderr)[:1000],
                 }
             )
         except Exception as e:
-            results.append({"command": cmd, "error": str(e)})
+            results.append({"command": argv, "error": str(e)})
 
     all_ok = all(r.get("returncode", 1) == 0 for r in results)
     return {

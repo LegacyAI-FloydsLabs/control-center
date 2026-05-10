@@ -132,7 +132,7 @@ def test_shell(page: Page):
         fail(page, pn, "brand title", "The Kernel visible", ".kernel-brand not found")
 
     # Hero image
-    hero = page.locator("img.fuck-hero")
+    hero = page.locator("img.kernel-hero")
     if hero.count() > 0:
         src = hero.first.get_attribute("src") or ""
         r = page.request.get(f"{BASE}{src}")
@@ -141,7 +141,7 @@ def test_shell(page: Page):
         else:
             fail(page, pn, "hero image", "Loads 200", f"Got {r.status}")
     else:
-        fail(page, pn, "hero image", "Present", "img.fuck-hero not found")
+        fail(page, pn, "hero image", "Present", "img.kernel-hero not found")
 
     # Status bar
     if element_exists(page, ".status-bar"):
